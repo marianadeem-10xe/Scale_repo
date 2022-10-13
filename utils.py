@@ -10,47 +10,74 @@ class BiLinear_Scale:
         self.scale_height = self.new_size[0]/self.old_size[0]
         self.scale_width  = self.new_size[1]/self.old_size[1]
     
-    def horizontal_interpolation(self, y, x):
-        """Assumption: y is int value and x is float value."""
-        left_pixel  = self.img[y, int(np.floor(x))] 
-        right_pixel = self.img[y, int(np.ceil(x))]
-        return (1-x)*left_pixel + (x)*right_pixel
+    def horizontal_interpolation(self, x1, x2, y1, weight):
+        if x1==x2:
+            return self.img[y1,x1]
+        left_pixel  = self.img[y1,x1]
+        right_pixel = self.img[y1,x2]
+        return (weight)*left_pixel + (1-weight)*right_pixel
     
-    def vertical_interpolation(self, y, x):
-        """Assumption: x is int value and y is float value."""
+    """def vertical_interpolation(self, x1, x2, y1, y2, weight):
         
-        top_pixel    = self.img[int(np.floor(y)), x] 
+        top_pixel    = self.img[] 
         bottom_pixel = self.img[int(np.ceil(y)) , x]
-        return (1-y)*top_pixel + (y)*bottom_pixel 
-
+        return (1-y)*top_pixel + (y)*bottom_pixel""" 
+    
     def scale_bilinear(self):
         
+        if self.new_size==self.old_size: return self.img
+
         print("scale factor",self.scale_height , self.scale_width)
         scaled_img = np.zeros((self.new_size), dtype = "float32")
         
-        # coordinates w.r.t the input image
-        old_y , old_x = np.linspace(0, 1, self.new_size[0]), np.linspace(0, 1, self.new_size[1])
-        
         for y in range(self.new_size[0]):
             for x in range(self.new_size[1]):
-                print("y, x: ", old_y[y], old_x[x])
-                proj_y, proj_x = old_y[y], old_x[x]
                 
-                if proj_y-int(proj_y)==0 and proj_x-int(proj_x)==0:
-                    scaled_img[y,x] = self.img[int(proj_y), int(proj_x)]
-                
-                elif proj_y-int(proj_y)==0:
-                    scaled_img[y,x] = self.horizontal_interpolation(int(proj_y), proj_x)
-                
-                elif proj_x-int(proj_x)==0:
-                    scaled_img[y,x] = self.vertical_interpolation(proj_y, int(proj_x))
-                
-                else:
-                    top_pixel    = self.horizontal_interpolation(int(np.floor(proj_y)), int(np.floor(proj_x)))
-                    bottom_pixel = self.horizontal_interpolation(int(np.ceil(proj_y)), int(np.ceil(proj_x))) 
-                    scaled_img[y,x] = (1-proj_y)*top_pixel + (proj_y)*bottom_pixel                   
-        return np.around(scaled_img)
+                # print("y, x: ", y/self.scale_height, x/self.scale_width)
+                proj_y, proj_x = y/self.scale_height, x/self.scale_width
 
+                y1 = min(int(np.floor(proj_y)), self.old_size[0]-1) 
+                x1 = min(int(np.floor(proj_x)), self.old_size[1]-1) 
+                y2 = min(int(np.ceil(proj_y)), self.old_size[0]-1)
+                x2 = min(int(np.ceil(proj_x)), self.old_size[1]-1)
+                
+                # Get the four neighbouring pixels
+                # top_left     = self.img[y1,x1]
+                # top_right    = self.img[y1,x2]
+                # bottom_left  = self.img[y2,x1]
+                # bottom_right = self.img[y2,x2]
+                
+                weight_h = np.ceil(proj_x) - proj_x
+                P1 = self.horizontal_interpolation(x1, x2, y1, weight_h)
+                P2 = self.horizontal_interpolation(x1, x2, y2, weight_h)
+
+                weight_v = np.ceil(proj_y)-proj_y
+                scaled_img[y,x] = (1-weight_v)*P1 + (weight_v)*P2
+                # print(weight_h, weight_v)
+        return np.around(scaled_img).astype("uint16")
+
+    def box_downsample(self):
+        box_width  = int(np.ceil(1/self.scale_width))
+        box_height = int(np.ceil(1/self.scale_height))
+        scaled_image = np.zeros((self.new_size), dtype="float32")
+        for y in range(self.new_size[0]):
+            for x in range(self.new_size[1]):
+                # Coordinates in old image
+                x_ = int(np.floor(x/self.scale_width))
+                y_ = int(np.floor(y/self.scale_height))
+                
+                # min() is used to assure that coordinates aren't out of bounds
+                x_end = min(x_ + box_width, self.old_size[0]-1)
+                y_end = min(y_ + box_height, self.old_size[1]-1)
+
+                # We average the colors in the box
+                pixel = self.img[y_:y_end,x_:x_end].mean()
+                
+                # We convert results to a tuple of ints
+                pixel = np.round(pixel).astype(int)
+                
+                scaled_image[y,x] = pixel 
+        return scaled_image.astype("uint16")         
 ##########################################################################
 
 def scale_nearest_neighbor(img, new_size):

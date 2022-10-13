@@ -12,7 +12,9 @@ raw_file = np.fromfile(raw_path, dtype="uint16").reshape(size)
 
 print("-"*50)
 print("original size: ", raw_file.shape)
-scaled_img = scale_nearest_neighbor_v0(raw_file, 0.3)
+scale = BiLinear_Scale(raw_file, scale_to_size)
+scaled_img = scale.scale_bilinear()
+# scaled_img = scale_nearest_neighbor_v0(raw_file, 0.3)
 print("scaled size: ", scaled_img.shape)        
 print("-"*50)
 
@@ -29,9 +31,13 @@ print("image saved")"""
 # print(sc_patch)
 
 #################################################################
-patch = np.array([[10,20],[30,40]])
+patch = np.array([[1,2,3,4],[5,6,7,8], [9,10,11,12], [13,14,15,16]])
 print(patch, patch.shape)
-scale = BiLinear_Scale(patch, (4,4))
-sc_patch = scale.scale_bilinear()
+scale = BiLinear_Scale(patch, (2,2))
+sc_patch = scale.box_downsample()
 print(sc_patch.shape)
 print(sc_patch)
+
+import cv2
+cv2_scaled = cv2.resize(patch.astype("uint8"), (2,2), interpolation= cv2.INTER_LINEAR)
+print(cv2_scaled)
