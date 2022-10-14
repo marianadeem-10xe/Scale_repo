@@ -10,12 +10,12 @@ class BiLinear_Scale:
         self.scale_height = self.new_size[0]/self.old_size[0]
         self.scale_width  = self.new_size[1]/self.old_size[1]
     
-    def horizontal_interpolation(self, x1, x2, y1, weight):
+    """def horizontal_interpolation(self, x1, x2, y1, weight):
         if x1==x2:
             return self.img[y1,x1]
         left_pixel  = self.img[y1,x1]
         right_pixel = self.img[y1,x2]
-        return (weight)*left_pixel + (1-weight)*right_pixel
+        return (weight)*left_pixel + (1-weight)*right_pixel"""
     
     """def vertical_interpolation(self, x1, x2, y1, y2, weight):
         
@@ -42,19 +42,25 @@ class BiLinear_Scale:
                 x2 = min(int(np.ceil(proj_x)), self.old_size[1]-1)
                 
                 # Get the four neighbouring pixels
-                # top_left     = self.img[y1,x1]
-                # top_right    = self.img[y1,x2]
-                # bottom_left  = self.img[y2,x1]
-                # bottom_right = self.img[y2,x2]
+                top_left     = self.img[y1,x1]
+                top_right    = self.img[y1,x2]
+                bottom_left  = self.img[y2,x1]
+                bottom_right = self.img[y2,x2]
                 
-                weight_h = np.ceil(proj_x) - proj_x
-                P1 = self.horizontal_interpolation(x1, x2, y1, weight_h)
-                P2 = self.horizontal_interpolation(x1, x2, y2, weight_h)
-
+                if x1==x2:
+                    P1 = top_left
+                    P2 = bottom_right
+                else:
+                    weight_h = np.ceil(proj_x) - proj_x
+                    P1 = (weight_h)*top_left + (1-weight_h)*top_right
+                    P2 = (weight_h)*bottom_left + (1-weight_h)*bottom_right
+        
                 weight_v = np.ceil(proj_y)-proj_y
-                scaled_img[y,x] = (1-weight_v)*P1 + (weight_v)*P2
+                scaled_img[y,x] = (weight_v)*P1 + (1-weight_v)*P2
                 # print(weight_h, weight_v)
         return np.around(scaled_img).astype("uint16")
+
+###########################################################################
 
     def box_downsample(self):
         box_width  = int(np.ceil(1/self.scale_width))
