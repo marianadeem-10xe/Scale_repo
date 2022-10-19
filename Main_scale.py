@@ -29,10 +29,11 @@ print("image saved")"""
 # print(sc_patch)
 
 #################################################################
-patch = np.array([[10,20], [30,40]])
+patch = np.array([[1,2,3,4],[5,6,7,8], [9,10,11,12], [13,14,15,16],
+                  [1,2,3,4],[5,6,7,8], [9,10,11,12], [13,14,15,16]])
 print(patch, patch.shape)
-scale = BiLinear_Scale(patch, (4,4))
-sc_patch = scale.scale_bilinear()
+scale = BiLinear_Scale(patch, (5,2))
+sc_patch = scale.downscale_by_int_factor()
 # formula_sc = scale.bilinear_formula()
 print(50*"-")
 print(sc_patch.shape)
@@ -42,5 +43,5 @@ print(50*"-")
 # print(50*"-")
 
 import cv2
-cv2_scaled = cv2.resize(patch.astype("uint8"), (4,4), interpolation= cv2.INTER_LINEAR)
+cv2_scaled = cv2.resize(patch.astype("uint8"), (2,2), interpolation= cv2.INTER_LINEAR)
 print(cv2_scaled)

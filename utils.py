@@ -54,14 +54,66 @@ class BiLinear_Scale:
                     bottom_pixel = self.horizontal_interpolation(int(np.ceil(proj_y)), proj_x) 
                     scaled_img[y,x] = (bottom_pixel-top_pixel)*proj_y + top_pixel                   
         return np.around(scaled_img).astype("uint16")
+
 ##########################################################################
 
-    def downscale_max(self):
-        pass
+    def downscale_by_int_factor(self, mode="average", size=None):
 
-    def downscale_average(self):
-        pass    
+        new_size =  self.new_size if size==None else size
+        scale_h  = new_size[0]/self.old_size[0]
+        scale_w  = new_size[1]/self.old_size[1]
+        
+        if self.old_size[0]%new_size[0]==0 and self.old_size[1]%new_size[1]==0:
+            
+            box_height = int(np.ceil(1/scale_h)) 
+            box_width  = int(np.ceil(1/scale_w))
+            
+            scaled_img = np.zeros(self.new_size, dtype = "float32")
+
+            for y in range(self.new_size[0]):
+                for x in range(self.new_size[1]):
+                    
+                    y_old = int(np.floor(y/scale_h))
+                    x_old = int(np.floor(x/scale_w))
+                    print(y_old, x_old)
+                    y_end = min(y_old + box_height, self.old_size[0])
+                    x_end = min(x_old + box_width, self.old_size[1])
+                    print(y_end, x_end)
+                    if mode == "max":
+                        scaled_img[y,x] = np.amax(self.img[y_old:y_end, x_old:x_end])
+                    else:     
+                        scaled_img[y,x] = np.average(self.img[y_old:y_end, x_old:x_end])
+            # print(scaled_img)
+            return np.round(scaled_img).astype("uint16")
+        
+        else:
+            print("here")
+            int_part_h, int_part_w =  self.old_size[0]//self.new_size[0] , self.old_size[1]//self.new_size[1]
+ 
+            if int_part_h>1 or int_part_w>1:
+                img_to_crop = self.downscale_by_int_factor(mode, size=(self.new_size[0]//int_part_h, self.new_size[1]//int_part_w))
+            else:
+                img_to_crop = self.img
+            print("to crop", img_to_crop.shape)
+            return self.crop(img_to_crop, self.new_size[0], self.new_size[1])     
+
+    def crop(self, img, new_h, new_w):
+        old_h, old_w             = img.shape[0], img.shape[1]
+        row_to_crop, col_to_crop = old_h-new_h, old_w-new_w
+        if row_to_crop!=0:
+            if row_to_crop%2==0:
+                img = img[row_to_crop//2:-row_to_crop//2, :]
+            else:
+                img = img[0:-1, :]
+        if col_to_crop!=0:         
+            if col_to_crop%2==0:
+                img = img[:, col_to_crop//2:-col_to_crop//2]
+            else:
+                img = img[:, 0:-1] 
+
+        return img               
 ##########################################################################    
+#   link: https://tech-algorithm.com/articles/bilinear-image-scaling/
     
     def bilinear_formula(self):
         print("scale factor",self.scale_height , self.scale_width)
