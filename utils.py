@@ -66,7 +66,6 @@ class Downscale:
     
     def downscale_by_int_factor(self, mode="average"):
         
-        
         if self.scale_height-int(self.scale_height)==0:
             if self.scale_width-int(self.scale_width)==0:
                 print("here")
@@ -91,7 +90,31 @@ class Downscale:
                 # print(scaled_img)
                 return np.round(scaled_img).astype("uint16")
         
-                       
+        else:
+            print("here")
+            int_part_h, int_part_w =  self.old_size[0]//self.new_size[0] , self.old_size[1]//self.new_size[1]
+ 
+            if int_part_h>1 or int_part_w>1:
+                img_to_crop = self.downscale_by_int_factor(mode, size=(self.new_size[0]//int_part_h, self.new_size[1]//int_part_w))
+            else:
+                img_to_crop = self.img
+            print("to crop", img_to_crop.shape)
+            return self.crop(img_to_crop, self.new_size[0], self.new_size[1])     
+
+    def crop(self, img, new_h, new_w):
+        old_h, old_w             = img.shape[0], img.shape[1]
+        row_to_crop, col_to_crop = old_h-new_h, old_w-new_w
+        if row_to_crop!=0:
+            if row_to_crop%2==0:
+                img = img[row_to_crop//2:-row_to_crop//2, :]
+            else:
+                img = img[0:-1, :]
+        if col_to_crop!=0:         
+            if col_to_crop%2==0:
+                img = img[:, col_to_crop//2:-col_to_crop//2]
+            else:
+                img = img[:, 0:-1] 
+        return img               
 ##########################################################################    
 #   link: https://tech-algorithm.com/articles/bilinear-image-scaling/
     
