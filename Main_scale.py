@@ -1,4 +1,4 @@
-from utils import demosaic_raw, white_balance, gamma
+from utils import Downscale, demosaic_raw, white_balance, gamma
 from utils import scale_nearest_neighbor_v0, BiLinear_Scale
 import numpy as np
 from matplotlib import pyplot as plt
@@ -32,7 +32,7 @@ print("image saved")"""
 patch = np.array([[1,2,3,4],[5,6,7,8], [9,10,11,12], [13,14,15,16],
                   [1,2,3,4],[5,6,7,8], [9,10,11,12], [13,14,15,16]])
 print(patch, patch.shape)
-scale = BiLinear_Scale(patch, (5,2))
+scale = Downscale(patch, (2,4))
 sc_patch = scale.downscale_by_int_factor()
 # formula_sc = scale.bilinear_formula()
 print(50*"-")
@@ -43,5 +43,5 @@ print(50*"-")
 # print(50*"-")
 
 import cv2
-cv2_scaled = cv2.resize(patch.astype("uint8"), (2,2), interpolation= cv2.INTER_LINEAR)
+cv2_scaled = cv2.resize(patch.astype("uint8"), (4,2), interpolation= cv2.INTER_LINEAR)
 print(cv2_scaled)
