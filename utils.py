@@ -46,8 +46,8 @@ class BiLinear_Scale:
                     scaled_img[y,x] = self.vertical_interpolation(proj_y, int(proj_x))
                 
                 else:
-                    top_pixel    = self.horizontal_interpolation(int(np.floor(proj_y)), int(np.floor(proj_x)))
-                    bottom_pixel = self.horizontal_interpolation(int(np.ceil(proj_y)), int(np.ceil(proj_x))) 
+                    top_pixel    = self.horizontal_interpolation(int(np.floor(proj_y)), proj_x)
+                    bottom_pixel = self.horizontal_interpolation(int(np.ceil(proj_y)), proj_x) 
                     scaled_img[y,x] = (1-proj_y)*top_pixel + (proj_y)*bottom_pixel                   
         return np.around(scaled_img)
 
