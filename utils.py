@@ -14,27 +14,31 @@ class BiLinear_Scale:
         """Assumption: y is int value and x is float value."""
         left_pixel  = self.img[y, int(np.floor(x))] 
         right_pixel = self.img[y, int(np.ceil(x))]
-        return (1-x)*left_pixel + (x)*right_pixel
+        return (right_pixel-left_pixel)*x + left_pixel
     
     def vertical_interpolation(self, y, x):
         """Assumption: x is int value and y is float value."""
         
         top_pixel    = self.img[int(np.floor(y)), x] 
         bottom_pixel = self.img[int(np.ceil(y)) , x]
-        return (1-y)*top_pixel + (y)*bottom_pixel 
+        return (bottom_pixel-top_pixel)*y + top_pixel 
 
-    def scale_bilinear(self):
+    def upscale_bilinear(self):
         
         print("scale factor",self.scale_height , self.scale_width)
         scaled_img = np.zeros((self.new_size), dtype = "float32")
         
-        # coordinates w.r.t the input image
-        old_y , old_x = np.linspace(0, 1, self.new_size[0]), np.linspace(0, 1, self.new_size[1])
-        
-        for y in range(self.new_size[0]):
+        # If the new size is assumed to be same as the old one, 
+        # each one of the new pixel is added with an increment of increment_h, increment_w 
+        increment_h = (self.old_size[0]-1)/(self.new_size[0]-1) 
+        increment_w = (self.old_size[1]-1)/(self.new_size[1]-1)
+
+        for y in range(self.new_size[0]): 
             for x in range(self.new_size[1]):
-                print("y, x: ", old_y[y], old_x[x])
-                proj_y, proj_x = old_y[y], old_x[x]
+
+                # index of the pixel w.r.t old width
+                proj_y = y*increment_h
+                proj_x = x*increment_w 
                 
                 if proj_y-int(proj_y)==0 and proj_x-int(proj_x)==0:
                     scaled_img[y,x] = self.img[int(proj_y), int(proj_x)]
@@ -46,10 +50,44 @@ class BiLinear_Scale:
                     scaled_img[y,x] = self.vertical_interpolation(proj_y, int(proj_x))
                 
                 else:
-                    top_pixel    = self.horizontal_interpolation(int(np.floor(proj_y)), int(np.floor(proj_x)))
-                    bottom_pixel = self.horizontal_interpolation(int(np.ceil(proj_y)), int(np.ceil(proj_x))) 
-                    scaled_img[y,x] = (1-proj_y)*top_pixel + (proj_y)*bottom_pixel                   
-        return np.around(scaled_img)
+                    top_pixel    = self.horizontal_interpolation(int(np.floor(proj_y)), proj_x)
+                    bottom_pixel = self.horizontal_interpolation(int(np.ceil(proj_y)), proj_x) 
+                    scaled_img[y,x] = (bottom_pixel-top_pixel)*proj_y + top_pixel                   
+        return np.around(scaled_img).astype("uint16")
+##########################################################################
+
+    def downscale_max(self):
+        pass
+
+    def downscale_average(self):
+        pass    
+##########################################################################    
+    
+    def bilinear_formula(self):
+        print("scale factor",self.scale_height , self.scale_width)
+        scaled_img = np.zeros((self.new_size), dtype = "float32")
+        
+        # If the new size is assumed to be same as the old one, 
+        # each one of the new pixel is added with an increment of increment_h, increment_w 
+        increment_h = (self.old_size[0]-1)/(self.new_size[0]-1) 
+        increment_w = (self.old_size[1]-1)/(self.new_size[1]-1)
+
+        for y in range(self.new_size[0]): 
+            for x in range(self.new_size[1]):
+
+                # index of the pixel w.r.t old width
+                proj_y = y*increment_h
+                proj_x = x*increment_w 
+
+                A = self.img[int(np.floor(proj_y)), int(np.floor(proj_x))]
+                B = self.img[int(np.floor(proj_y)), int(np.ceil(proj_x))]
+                C = self.img[int(np.ceil(proj_y)), int(np.floor(proj_x))]
+                D = self.img[int(np.ceil(proj_y)), int(np.ceil(proj_x))]
+
+                scaled_img[y,x] = (A*(1-proj_x)*(1-proj_y)) + (B*proj_x*(1-proj_y)) +\
+                                  ((C*proj_y)*(1-proj_x)) + (D*proj_x*proj_y)
+
+        return np.around(scaled_img).astype("uint16")                  
 
 ##########################################################################
 
