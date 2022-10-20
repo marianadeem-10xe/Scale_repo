@@ -25,7 +25,7 @@ class BiLinear_Scale:
 
     def scale_bilinear(self):
         
-        print("scale factor",self.scale_height , self.scale_width)
+        # print("scale factor",self.scale_height , self.scale_width)
         scaled_img = np.zeros((self.new_size), dtype = "float32")
         
         # coordinates w.r.t the input image
@@ -33,7 +33,7 @@ class BiLinear_Scale:
         
         for y in range(self.new_size[0]):
             for x in range(self.new_size[1]):
-                print("y, x: ", old_y[y], old_x[x])
+                # print("y, x: ", old_y[y], old_x[x])
                 proj_y, proj_x = old_y[y], old_x[x]
                 
                 if proj_y-int(proj_y)==0 and proj_x-int(proj_x)==0:
