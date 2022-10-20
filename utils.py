@@ -81,7 +81,16 @@ class Downscale:
                 img = img[:, 0:-1] 
         return img
     
-
+    def get_prime_factors(self, n):
+        """Returns the list of all the prime factors less than 10 of the input integer"""
+        factors = [2,3,5,7,11,13]
+        lst     = []
+        for fact in factors:
+            while n%fact==0:
+                n = n//fact
+                lst.append(fact)
+        return lst        
+    
     def downscale_by_int_factor(self, mode="average"):
         
         if self.need_to_crop:
