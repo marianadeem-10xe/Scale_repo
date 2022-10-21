@@ -121,7 +121,27 @@ class Downscale:
         # print(scaled_img)
         return np.round(scaled_img).astype("uint16")     
 
-                   
+
+
+##########################################################################
+def optimal_reduction_factor(old_size, new_size):
+    factor_lst = [3/4, 1/5, 2/5, 3/5, 4/5, 5/6,4/7 ]
+    min_crop_val, min_fact = [np.inf, np.inf], [0,0]
+    
+    for i in range(2):
+        for fact in factor_lst:
+            # crop then scale: (old_size - crop) * reduction factor = new_size
+            crop_val = old_size[i] - (new_size[i]/fact)
+            print(fact, crop_val)
+            if crop_val < min_crop_val[i] and crop_val>0: 
+                min_crop_val[i], min_fact[i] = int(crop_val), fact
+    
+    # if all factors fail, crop directly
+    while np.inf in min_crop_val:
+        idx = min_crop_val.index(np.inf)
+        min_crop_val[idx] = old_size[idx] - new_size[idx]
+
+    return min_crop_val, min_fact            
 ##########################################################################    
 #   link: https://tech-algorithm.com/articles/bilinear-image-scaling/
     
