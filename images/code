@@ -1,0 +1,61 @@
+from unicodedata import decimal
+import numpy as np
+import colour_demosaicing as cd
+
+class BiLinear_Scale:
+    def __init__(self, img, new_size):
+        self.img          = np.float32(img)
+        self.old_size     = (img.shape[0], img.shape[1])
+        self.new_size     = new_size
+        self.scale_height = self.new_size[0]/self.old_size[0]
+        self.scale_width  = self.new_size[1]/self.old_size[1]
+    
+    """def horizontal_interpolation(self, x1, x2, y1, weight):
+        if x1==x2:
+            return self.img[y1,x1]
+        left_pixel  = self.img[y1,x1]
+        right_pixel = self.img[y1,x2]
+        return (weight)*left_pixel + (1-weight)*right_pixel"""
+    
+    """def vertical_interpolation(self, x1, x2, y1, y2, weight):
+        
+        top_pixel    = self.img[] 
+        bottom_pixel = self.img[int(np.ceil(y)) , x]
+        return (1-y)*top_pixel + (y)*bottom_pixel""" 
+    
+    def scale_bilinear(self):
+        
+        if self.new_size==self.old_size: return self.img
+
+        print("scale factor",self.scale_height , self.scale_width)
+        scaled_img = np.zeros((self.new_size), dtype = "float32")
+        
+        for y in range(self.new_size[0]):
+            for x in range(self.new_size[1]):
+                
+                # print("y, x: ", y/self.scale_height, x/self.scale_width)
+                proj_y, proj_x = y/self.scale_height, x/self.scale_width
+
+                y1 = min(int(np.floor(proj_y)), self.old_size[0]-1) 
+                x1 = min(int(np.floor(proj_x)), self.old_size[1]-1) 
+                y2 = min(int(np.ceil(proj_y)), self.old_size[0]-1)
+                x2 = min(int(np.ceil(proj_x)), self.old_size[1]-1)
+                
+                # Get the four neighbouring pixels
+                top_left     = self.img[y1,x1]
+                top_right    = self.img[y1,x2]
+                bottom_left  = self.img[y2,x1]
+                bottom_right = self.img[y2,x2]
+                
+                if x1==x2:
+                    P1 = top_left
+                    P2 = bottom_right
+                else:
+                    weight_h = np.ceil(proj_x) - proj_x
+                    P1 = (weight_h)*top_left + (1-weight_h)*top_right
+                    P2 = (weight_h)*bottom_left + (1-weight_h)*bottom_right
+        
+                weight_v = np.ceil(proj_y)-proj_y
+                scaled_img[y,x] = (weight_v)*P1 + (1-weight_v)*P2
+                # print(weight_h, weight_v)
+        return np.around(scaled_img).astype("uint16")

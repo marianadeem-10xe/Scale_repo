@@ -10,19 +10,6 @@ class BiLinear_Scale:
         self.scale_height = self.new_size[0]/self.old_size[0]
         self.scale_width  = self.new_size[1]/self.old_size[1]
     
-    """def horizontal_interpolation(self, x1, x2, y1, weight):
-        if x1==x2:
-            return self.img[y1,x1]
-        left_pixel  = self.img[y1,x1]
-        right_pixel = self.img[y1,x2]
-        return (weight)*left_pixel + (1-weight)*right_pixel"""
-    
-    """def vertical_interpolation(self, x1, x2, y1, y2, weight):
-        
-        top_pixel    = self.img[] 
-        bottom_pixel = self.img[int(np.ceil(y)) , x]
-        return (1-y)*top_pixel + (y)*bottom_pixel""" 
-    
     def scale_bilinear(self):
         
         if self.new_size==self.old_size: return self.img
@@ -47,16 +34,14 @@ class BiLinear_Scale:
                 bottom_left  = self.img[y2,x1]
                 bottom_right = self.img[y2,x2]
                 
+                P1 = (x2-proj_x)*top_left + (proj_x-x1)*top_right
+                P2 = (x2-proj_x)*bottom_left + (proj_x-x1)*bottom_right
+                
                 if x1==x2:
                     P1 = top_left
                     P2 = bottom_right
-                else:
-                    weight_h = np.ceil(proj_x) - proj_x
-                    P1 = (weight_h)*top_left + (1-weight_h)*top_right
-                    P2 = (weight_h)*bottom_left + (1-weight_h)*bottom_right
-        
-                weight_v = np.ceil(proj_y)-proj_y
-                scaled_img[y,x] = (weight_v)*P1 + (1-weight_v)*P2
+                
+                scaled_img[y,x] = (y2-proj_y)*P1 + (proj_y-y1)*P2
                 # print(weight_h, weight_v)
         return np.around(scaled_img).astype("uint16")
 
