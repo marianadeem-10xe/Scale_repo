@@ -54,7 +54,35 @@ class BiLinear_Scale:
                     bottom_pixel = self.horizontal_interpolation(int(np.ceil(proj_y)), proj_x) 
                     scaled_img[y,x] = (bottom_pixel-top_pixel)*proj_y + top_pixel                   
         return np.around(scaled_img).astype("uint16")
+##########################################################################
+    
+    #  link: https://tech-algorithm.com/articles/bilinear-image-scaling/
+    
+    def bilinear_formula(self):
+        print("scale factor",self.scale_height , self.scale_width)
+        scaled_img = np.zeros((self.new_size), dtype = "float32")
+        
+        # If the new size is assumed to be same as the old one, 
+        # each one of the new pixel is added with an increment of increment_h, increment_w 
+        increment_h = (self.old_size[0]-1)/(self.new_size[0]-1) 
+        increment_w = (self.old_size[1]-1)/(self.new_size[1]-1)
 
+        for y in range(self.new_size[0]): 
+            for x in range(self.new_size[1]):
+
+                # index of the pixel w.r.t old width
+                proj_y = y*increment_h
+                proj_x = x*increment_w 
+
+                A = self.img[int(np.floor(proj_y)), int(np.floor(proj_x))]
+                B = self.img[int(np.floor(proj_y)), int(np.ceil(proj_x))]
+                C = self.img[int(np.ceil(proj_y)), int(np.floor(proj_x))]
+                D = self.img[int(np.ceil(proj_y)), int(np.ceil(proj_x))]
+
+                scaled_img[y,x] = (A*(1-proj_x)*(1-proj_y)) + (B*proj_x*(1-proj_y)) +\
+                                  ((C*proj_y)*(1-proj_x)) + (D*proj_x*proj_y)
+
+        return np.around(scaled_img).astype("uint16")
 ##########################################################################
 class Downscale:
     def __init__(self, img, new_size):
@@ -95,6 +123,9 @@ class Downscale:
         
         if self.need_to_crop:
             cropped_img = self.crop(self.img)
+        else:
+            cropped_img = self.img
+
         # print(cropped_img, cropped_img.shape)
         scale_height = self.new_size[0]/cropped_img.shape[0]
         scale_width  = self.new_size[1]/cropped_img.shape[1]
@@ -121,11 +152,9 @@ class Downscale:
         # print(scaled_img)
         return np.round(scaled_img).astype("uint16")     
 
-
-
 ##########################################################################
 def optimal_reduction_factor(old_size, new_size):
-    factor_lst = [3/4, 1/5, 2/5, 3/5, 4/5, 5/6,4/7 ]
+    factor_lst = [3/4, 1/5, 2/5, 3/5, 4/5, 5/6,4/7]
     min_crop_val, min_fact = [np.inf, np.inf], [0,0]
     
     for i in range(2):
@@ -142,37 +171,8 @@ def optimal_reduction_factor(old_size, new_size):
         min_crop_val[idx] = old_size[idx] - new_size[idx]
 
     return min_crop_val, min_fact            
-##########################################################################    
-#   link: https://tech-algorithm.com/articles/bilinear-image-scaling/
-    
-    def bilinear_formula(self):
-        print("scale factor",self.scale_height , self.scale_width)
-        scaled_img = np.zeros((self.new_size), dtype = "float32")
-        
-        # If the new size is assumed to be same as the old one, 
-        # each one of the new pixel is added with an increment of increment_h, increment_w 
-        increment_h = (self.old_size[0]-1)/(self.new_size[0]-1) 
-        increment_w = (self.old_size[1]-1)/(self.new_size[1]-1)
-
-        for y in range(self.new_size[0]): 
-            for x in range(self.new_size[1]):
-
-                # index of the pixel w.r.t old width
-                proj_y = y*increment_h
-                proj_x = x*increment_w 
-
-                A = self.img[int(np.floor(proj_y)), int(np.floor(proj_x))]
-                B = self.img[int(np.floor(proj_y)), int(np.ceil(proj_x))]
-                C = self.img[int(np.ceil(proj_y)), int(np.floor(proj_x))]
-                D = self.img[int(np.ceil(proj_y)), int(np.ceil(proj_x))]
-
-                scaled_img[y,x] = (A*(1-proj_x)*(1-proj_y)) + (B*proj_x*(1-proj_y)) +\
-                                  ((C*proj_y)*(1-proj_x)) + (D*proj_x*proj_y)
-
-        return np.around(scaled_img).astype("uint16")                  
 
 ##########################################################################
-
 def scale_nearest_neighbor(img, new_size):
     old_height, old_width = img.shape[0], img.shape[1]
     new_height, new_width = new_size[0], new_size[1]
