@@ -93,7 +93,7 @@ class Downscale:
         self.scale_width  = self.new_size[1]/self.old_size[1]
         self.need_to_crop = (self.new_size[0]%self.old_size[0]!=0 or self.new_size[1]%self.old_size[1]!=0)
 
-    def crop(self, img):
+    def crop(self, img, rows_to_crop=0, cols_to_crop=0):
         old_h, old_w               = img.shape[0], img.shape[1]
         rows_to_crop, cols_to_crop = old_h%self.new_size[0], old_w%self.new_size[1]
         
@@ -120,50 +120,58 @@ class Downscale:
         return lst        
     
     def downscale_by_int_factor(self, mode="average"):
-        
-        if self.need_to_crop:
-            cropped_img = self.crop(self.img)
-        else:
-            cropped_img = self.img
+        """Assumption: new_size is a multiple of old image"""
+        # if self.need_to_crop:
+        #     cropped_img = self.crop(self.img)
+        # else:
+        #     cropped_img = self.img
 
         # print(cropped_img, cropped_img.shape)
-        scale_height = self.new_size[0]/cropped_img.shape[0]
-        scale_width  = self.new_size[1]/cropped_img.shape[1]
+        # scale_height = self.new_size[0]/self.img.shape[0]
+        # scale_width  = self.new_size[1]/self.img.shape[1]
         
-        box_height = int(np.ceil(1/scale_height)) 
-        box_width  = int(np.ceil(1/scale_width))
+        assert self.scale_height-int(self.scale_height)==0 and self.scale_width-int(self.scale_width)==0
+        
+        box_height = int(np.ceil(1/self.scale_height)) 
+        box_width  = int(np.ceil(1/self.scale_width))
         
         scaled_img = np.zeros(self.new_size, dtype = "float32")
 
         for y in range(self.new_size[0]):
             for x in range(self.new_size[1]):
                 
-                y_old = int(np.floor(y/scale_height))
-                x_old = int(np.floor(x/scale_width))
+                y_old = int(np.floor(y/self.scale_height))
+                x_old = int(np.floor(x/self.scale_width))
                 # print(y_old, x_old)
                 y_end = min(y_old + box_height, self.old_size[0])
                 x_end = min(x_old + box_width, self.old_size[1])
                 # print(y_end, x_end)
                 if mode == "max":
-                    scaled_img[y,x] = np.amax(cropped_img[y_old:y_end, x_old:x_end])
+                    scaled_img[y,x] = np.amax(self.img[y_old:y_end, x_old:x_end])
                 else:     
-                    cropped_img[y_old:y_end, x_old:x_end]
-                    scaled_img[y,x] = np.average(cropped_img[y_old:y_end, x_old:x_end])
+                    self.img[y_old:y_end, x_old:x_end]
+                    scaled_img[y,x] = np.average(self.img[y_old:y_end, x_old:x_end])
         # print(scaled_img)
         return np.round(scaled_img).astype("uint16")     
 
 ##########################################################################
 def optimal_reduction_factor(old_size, new_size):
-    factor_lst = [3/4, 1/5, 2/5, 3/5, 4/5, 5/6,4/7]
+    
+    # list of reduction factors: [3/4, 1/5, 2/5, 3/5, 4/5, 5/6, 4/7]
+    
+    numertaors   = [3,1,2,3,4,5,4]
+    denominators = [4,5,5,5,5,6,7]
+    
     min_crop_val, min_fact = [np.inf, np.inf], [0,0]
     
     for i in range(2):
-        for fact in factor_lst:
+        for fraction in zip(numertaors, denominators):
             # crop then scale: (old_size - crop) * reduction factor = new_size
+            fact = fraction[0]/fraction[1]
             crop_val = old_size[i] - (new_size[i]/fact)
             print(fact, crop_val)
             if crop_val < min_crop_val[i] and crop_val>0: 
-                min_crop_val[i], min_fact[i] = int(crop_val), fact
+                min_crop_val[i], min_fact[i] = int(crop_val), fraction
     
     # if all factors fail, crop directly
     while np.inf in min_crop_val:
