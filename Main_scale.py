@@ -4,17 +4,24 @@ from utils_scale import Scale, UpScale, DownScale
 import numpy as np
 from matplotlib import pyplot as plt
 import cv2
-raw_path = "./text_img_scaled_1944x2592.raw"
-size     = (1944, 2592)          # (height, width)
-scale_to_size = (1080,1920)
+raw_path = "./text_img.jpg"
+size     = (1944, 2592, 3)          # (height, width)
+scale_to_size = (720, 1280, 3)
 
-
-raw_file = np.fromfile(raw_path, dtype="uint16").reshape(size)
+# raw_file = np.fromfile(raw_path, dtype="uint16").reshape(size)
+raw_file = cv2.imread(raw_path)
+raw_file = cv2.cvtColor(raw_file, cv2.COLOR_BGR2RGB)
+raw_file = cv2.resize(raw_file, (2592, 1944), interpolation=cv2.INTER_LINEAR)
 print("-"*50)
-print("original size: ", raw_file.shape)
+print("original size: ", raw_file.shape, type(raw_file))
 
-scale = Scale(raw_file, scale_to_size)
-scaled_img = scale.execute()
+scaled_img = np.empty(scale_to_size, dtype="uint16")
+
+for i in range(3):
+    ch_arr = raw_file[:, :, i]
+    print(ch_arr.shape)
+    scale = Scale(ch_arr, scale_to_size)
+    scaled_img[:, :, i] = scale.execute()
 
 # scale = BiLinear_Scale(raw_file, scale_to_size)
 # scaled_img = scale.bilinear_formula()
@@ -24,10 +31,11 @@ scaled_img = scale.execute()
 
 print("scaled size: ", scaled_img.shape)        
 print("-"*50)
-save_img = cv2.cvtColor(scaled_img, cv2.COLOR_GRAY2RGB)
+
+# save_img = cv2.cvtColor(scaled_img, cv2.COLOR_GRAY2RGB)
 # blc_corr = np.clip(np.float32(scaled_img)-200, 0, 4095).astype("uint16")
 # save_img = gamma(demosaic_raw(white_balance(blc_corr.copy(), 320/256, 740/256, 256/256), "RGGB"))
-plt.imsave("./NN_DownScale_text_(1920x1080).png", save_img.astype("uint8"))
+plt.imsave("./resize_(1944x2592)_NN_DownScale_text_color_(720x1280).jpg", scaled_img.astype("uint8"))
 print("image saved")
 
 ################################################################
