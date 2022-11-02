@@ -1,5 +1,6 @@
+from math import log10, sqrt
 import numpy as np
-import colour_demosaicing as cd
+import pandas as pd
 
 class Scale:
     def __init__(self, img, new_size):
@@ -239,3 +240,27 @@ class DownScale(Scale):
         return np.round(scaled_img).astype("uint16")    
 
 ##########################################################################
+# Object to compile results in a csv file
+class Results:
+    def __init__(self):
+        self.confusion_pd = pd.DataFrame(np.zeros((1,5)), columns=["Filename", "Scaled from", "Scaled to","MSE", "PSNR"])
+    
+    def add_row(self,row):
+        self.confusion_pd = pd.concat([self.confusion_pd, pd.DataFrame(np.array(row, dtype=object).reshape(1,5), columns=["Filename", "Scaled from", "Scaled to","MSE", "PSNR"])], ignore_index=False)
+    
+    def save_csv(self, path, filename):
+        self.confusion_pd.to_csv(path + "/" +filename + ".csv", index=False)
+
+##########################################################################
+
+def Evaluation(cv2_img, scaled_img):
+    error, PSNR = 0, 0
+    for ch in range(3):
+        error += np.round((np.add(cv2_img.astype("float32"), - scaled_img.astype("float32"))**2).sum()/cv2_img.size, 4)
+        PSNR  += round(20*log10(4095/sqrt(error)), 4)
+    error, PSNR = error/3, PSNR/3
+    print("-"*50)
+    print("MSE: ", error)
+    print("PSNR: ", PSNR)
+    print("-"*50)
+    return [error, PSNR]
