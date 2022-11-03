@@ -64,7 +64,7 @@ class Scale:
         self.img   = down_scale.downscale_by_int_factor()
         return self.img
 
-    def resize_by_non_int_fact(self, red_fact):
+    def resize_by_non_int_fact(self, red_fact, method):
         
         """"
         Resize 2D array by non-inteeger factor n/d.
@@ -73,7 +73,7 @@ class Scale:
         Parameter:
         ---------
         red_fact: list with scale factors for height and width.
-        
+        method: list with algorithms used for upscaling(at index 0) and downscaling(at index 1).
         Output: scaled img
         """
         
@@ -89,19 +89,19 @@ class Scale:
                 upscale_to_size = (upscale_fact*self.old_size[0], self.old_size[1]) if i==0 else \
                                     (self.old_size[0], upscale_fact*self.old_size[1])
                 upscale  = UpScale(self.img, upscale_to_size)
-                self.img = upscale.execute()
+                self.img = upscale.execute(method[0])
                 self.old_size = (self.img.shape[0], self.img.shape[1])
 
                 print("downscaling {} by: ".format("height" if i==0 else "width"), downscale_fact)
                 downscale_to_size = (self.old_size[0]//downscale_fact, self.old_size[1]) if i==0 else \
                                     (self.old_size[0], self.old_size[1]//downscale_fact)    
                 downscale     = DownScale(self.img, downscale_to_size)
-                self.img      = downscale.downscale_by_int_factor()
+                self.img      = downscale.execute(method[1])
                 self.old_size = (self.img.shape[0], self.img.shape[1])
                 
         return self.img
 
-    def execute(self):
+    def execute(self, method=["Nearest_Neighboor", ""]):
         
         """
         Rescale an input 2D array of size 2592x1944 to one of the following sizes:
@@ -139,7 +139,7 @@ class Scale:
             
             # Resize if needed.
             if self.old_size!=self.new_size:
-               scaled_img = self.resize_by_non_int_fact(red_fact)       
+               scaled_img = self.resize_by_non_int_fact(red_fact, method)       
     
         return scaled_img    
 ##########################################################################
@@ -148,11 +148,11 @@ class UpScale(Scale):
     def scale_nearest_neighbor(self):
         
         """
-        Upscale 2D array by integer scale factor using Nearest Neighbor (NN) algorithm.
+        Upscale/Downscale 2D array by integer scale factor using Nearest Neighbor (NN) algorithm.
         """
         old_height, old_width = self.img.shape[0], self.img.shape[1]
         new_height, new_width = self.new_size[0], self.new_size[1]
-        scale_height , scale_width = int(new_height/old_height), int(new_width/old_width)
+        scale_height , scale_width = new_height/old_height, new_width/old_width
 
         scaled_img = np.zeros((new_height, new_width), dtype = "uint16")
 
@@ -162,10 +162,55 @@ class UpScale(Scale):
                 x_nearest = int(np.floor(x/scale_width))
                 scaled_img[y,x] = self.img[y_nearest, x_nearest]
         return scaled_img
+    
+    def scale_bilinear_method(self):
+        
+        """Upscale/Downscale an image using bilinear interpolation method
+         using an integer factor."""
+        
+        old_height, old_width = self.img.shape[0], self.img.shape[1]
+        new_height, new_width = self.new_size[0], self.new_size[1]
+        scale_height , scale_width = new_height/old_height, new_width/old_width
 
-    def execute(self):
-        return self.scale_nearest_neighbor()
+        scaled_img = np.zeros((new_height, new_width), dtype = "float32")
+    
+        for y in range(new_height):
+            for x in range(new_width):
+                
+                # Coordinates in old image
+                old_y, old_x = y/scale_height, x/scale_width
 
+                x1 = min(int(np.floor(old_x)), old_width-1)
+                y1 = min(int(np.floor(old_y)), old_height-1)
+                x2 = min(int(np.ceil(old_x)), old_width-1)
+                y2 = min(int(np.ceil(old_y)), old_height-1)
+                
+                # Get four neghboring pixels
+                Q11 = self.img[y1, x1]
+                Q12 = self.img[y1, x2]
+                Q21 = self.img[y2, x1]
+                Q22 = self.img[y2, x2]
+
+                # Interpolating P1 and P2
+                P1 = (x2-old_x)*Q11 + (old_x-x1)*Q12
+                P2 = (x2-old_x)*Q21 + (old_x-x1)*Q22
+
+                # The case where the new pixel lies between two pixels
+                if x1 == x2:
+                    P1 = Q11
+                    P2 = Q22
+
+                # Interpolating P
+                P = (y2-old_y)*P1 + (old_y-y1)*P2    
+
+                scaled_img[y,x] = np.round(P)
+        return scaled_img.astype("uint16") 
+
+    def execute(self, method):
+        print("upscaling using {}".format(method if method else "Bilinear Interpolation"))
+        if method == "Nearest_Neighbor":
+            return self.scale_nearest_neighbor()
+        return self.scale_bilinear_method()
 ##########################################################################
 class DownScale(Scale):
     
@@ -221,7 +266,7 @@ class DownScale(Scale):
         box_height = int(np.ceil(1/self.scale_height)) 
         box_width  = int(np.ceil(1/self.scale_width))
         
-        scaled_img = np.zeros(self.new_size, dtype = "float32")
+        scaled_img = np.zeros((self.new_size[0], self.new_size[1]), dtype = "float32")
 
         for y in range(self.new_size[0]):
             for x in range(self.new_size[1]):
@@ -238,6 +283,13 @@ class DownScale(Scale):
                     scaled_img[y,x] = np.average(self.img[y_old:y_end, x_old:x_end])
         
         return np.round(scaled_img).astype("uint16")    
+
+    def execute(self, method):
+        print("downscaling using {}".format(method if method else "Bilinear Interpolation"))
+        if method=="Nearest_Neighbor":
+            scale_obj = UpScale(self.img, self.new_size)
+            return scale_obj.execute("Nearest_Neighbor")
+        return self.downscale_by_int_factor()  
 
 ##########################################################################
 # Object to compile results in a csv file
@@ -257,7 +309,11 @@ def Evaluation(cv2_img, scaled_img):
     error, PSNR = 0, 0
     for ch in range(3):
         error += np.round((np.add(cv2_img.astype("float32"), - scaled_img.astype("float32"))**2).sum()/cv2_img.size, 4)
-        PSNR  += round(20*log10(4095/sqrt(error)), 4)
+        try:
+            PSNR  += round(20*log10(4095/sqrt(error)), 4)
+        except ZeroDivisionError:
+            pass
+    
     error, PSNR = error/3, PSNR/3
     print("-"*50)
     print("MSE: ", error)

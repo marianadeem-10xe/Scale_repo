@@ -8,7 +8,10 @@ from matplotlib import pyplot as plt
 folder          = "./results/Graph images/GIMP_1944x2592"
 size            = (1944, 2592, 3)          # (height, width)
 # scale_to_size   = (1440, 2560, 3)
+upscale_method = "Nearest_Neighbor"
+downscale_method = ""
 result          = Results()
+
 for scale_to_size in [(1440, 2560, 3), (720, 1280, 3), (480, 640, 3), (1080,1920, 3)]:
     for filename in os.listdir(folder):
         print("scaling img: ", filename)
@@ -32,7 +35,7 @@ for scale_to_size in [(1440, 2560, 3), (720, 1280, 3), (480, 640, 3), (1080,1920
             ch_arr = raw_file[:, :, i]
             print(ch_arr.shape)
             scale = Scale(ch_arr, scale_to_size)
-            scaled_img[:, :, i] = scale.execute()
+            scaled_img[:, :, i] = scale.execute([upscale_method, downscale_method])
 
         print("scaled size: ", scaled_img.shape)        
         print("-"*50)
@@ -41,6 +44,5 @@ for scale_to_size in [(1440, 2560, 3), (720, 1280, 3), (480, 640, 3), (1080,1920
 
         plt.imsave(output_filename, scaled_img.astype("uint8"))
         print("image saved")
-
 result.save_csv("./results/Graph images", "Results.csv")
 print("results saved.")
