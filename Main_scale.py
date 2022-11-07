@@ -5,14 +5,14 @@ from utils_scale import Scale, Evaluation, Results
 from matplotlib import pyplot as plt
 
 
-folder          = "./results/Graph images/GIMP_1944x2592"
-size            = (1944, 2592, 3)          # (height, width)
+folder           = "./results/Graph images/GIMP_1944x2592"
+size             = (1944, 2592, 3)          # (height, width)
 # scale_to_size   = (1440, 2560, 3)
-upscale_method = "Nearest_Neighbor"
+upscale_method   = "Nearest_Neighbor"
 downscale_method = ""
-result          = Results()
+result           = Results()
 
-for scale_to_size in [(1440, 2560, 3), (720, 1280, 3), (480, 640, 3), (1080,1920, 3)]:
+for scale_to_size in [(int(1944*1.5), int(2592*1.5),3)]:#,(1440, 2560, 3), (720, 1280, 3), (480, 640, 3), (1080,1920, 3)]:
     for filename in os.listdir(folder):
         print("scaling img: ", filename)
         output_filename = "./results/Graph images/Scale algo/" + filename.split("_")[0] + "_{}x{}.jpg".format(scale_to_size[0], scale_to_size[1]) 
@@ -35,7 +35,7 @@ for scale_to_size in [(1440, 2560, 3), (720, 1280, 3), (480, 640, 3), (1080,1920
             ch_arr = raw_file[:, :, i]
             print(ch_arr.shape)
             scale = Scale(ch_arr, scale_to_size)
-            scaled_img[:, :, i] = scale.execute([upscale_method, downscale_method])
+            scaled_img[:, :, i] = scale.execute([upscale_method, downscale_method], False)
 
         print("scaled size: ", scaled_img.shape)        
         print("-"*50)
@@ -44,5 +44,6 @@ for scale_to_size in [(1440, 2560, 3), (720, 1280, 3), (480, 640, 3), (1080,1920
 
         plt.imsave(output_filename, scaled_img.astype("uint8"))
         print("image saved")
+
 result.save_csv("./results/Graph images", "Results.csv")
 print("results saved.")

@@ -5,7 +5,7 @@ import utils_scale as utils
 
 
 file_path = "./results/Graph images/comparison_cv_upscaleNN_downscaleBilinear/cv2_results/cv2_ColorDifferenceError_1080x1920.png"
-scale_to_size = (int(1080*2.7), int(1920*2.7), 3) 
+scale_to_size = (int(1080*1.5), int(1920*1.5), 3) 
 result = utils.Results()
 
 img = cv2.cvtColor(cv2.imread(file_path), cv2.COLOR_BGR2RGB)
@@ -21,8 +21,8 @@ original_img  = cv2.cvtColor(cv2.imread(org_path), cv2.COLOR_BGR2RGB)
 # To compare with implemented algorithm
 scaled_img = np.empty(scale_to_size, dtype="uint16")
 for i in range(3):
-    upscale = utils.UpScale(img[:,:,i], scale_to_size)
-    scaled_img[:,:,i] = upscale.execute("")
+    scale = utils.Scale(img[:,:,i], (scale_to_size[0], scale_to_size[1]))
+    scaled_img[:,:,i] = scale.execute(["Nearest_Neighbor", ""], False)
 
 eval = utils.Evaluation(cv2_scaled, scaled_img)
 

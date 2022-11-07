@@ -8,7 +8,7 @@ class Scale:
         self.new_size = new_size
         self.old_size = (img.shape[0], img.shape[1])
     
-    def optimal_reduction_factor(self, curr_size, required_size):
+    def optimal_reduction_factor(self, curr_size, required_size, crop):
         
         """
         Compute the minimum number of rows and columns to be cropped 
@@ -27,18 +27,22 @@ class Scale:
         # list of reduction factors: [3/4, 1/5, 2/5, 3/5, 4/5, 5/6, 4/7]
         
         print("Computing reduction factors...")
-        numertaors   = [3,1,2,3,4,5,4]
-        denominators = [4,5,5,5,5,6,7]
-        
-        min_crop_val, min_fact = [np.inf, np.inf], [0,0]
-        
+        numertaors   = [3,3,1,2,3,4,5,4]
+        denominators = [2,4,5,5,5,5,6,7]
+        min_crop_val, min_fact = [np.inf, np.inf], [1,1]  
+
         for i in range(2):
             for fraction in zip(numertaors, denominators):
                 # crop then scale: (old_size - crop) * reduction factor = new_size
                 fact = fraction[0]/fraction[1]
-                crop_val = curr_size[i] - (required_size[i]/fact)
-                if crop_val < min_crop_val[i] and crop_val>0: 
-                    min_crop_val[i], min_fact[i] = int(crop_val), fraction
+                if crop==False:
+                    min_crop_val = [0, 0]
+                    if curr_size[i]*fact==required_size[i]:
+                        min_fact[i] = fraction  
+                else:
+                    crop_val = curr_size[i] - (required_size[i]/fact)
+                    if crop_val < min_crop_val[i] and crop_val>0: 
+                        min_crop_val[i], min_fact[i] = int(crop_val), fraction
         
         # if all factors fail, crop directly
         while np.inf in min_crop_val:
@@ -78,7 +82,7 @@ class Scale:
         """
         
         for i in range(2):
-            if red_fact[i]==0:  # means that no scaling is required (for both height and width)
+            if red_fact[i]==1:  # means that no scaling is required (for both height and width)
                 continue
             else:
                 # reduction factor = n/d    --->  Upscale the cropped image n times then downscale d times
@@ -101,7 +105,7 @@ class Scale:
                 
         return self.img
 
-    def execute(self, method=["Nearest_Neighboor", ""]):
+    def execute(self, method=["Nearest_Neighbor", ""], crop=True):
         
         """
         Rescale an input 2D array of size 2592x1944 to one of the following sizes:
@@ -119,28 +123,32 @@ class Scale:
         output_h = [1440, 1080, 720, 480]
         output_w = [2560, 1920, 1280, 640]
         
-        assert self.new_size[0] in output_h or self.new_size[1] in output_w,\
+        """assert self.new_size[0] in output_h or self.new_size[1] in output_w,\
             "Output size must be one of the following:\n"\
-            "- 2560x1440,\n- 1920x1080,\n- 1280x720,\n- 640x480"   
+            "- 2560x1440,\n- 1920x1080,\n- 1280x720,\n- 640x480"
+        """   
         
         scaled_img    = self.downscale_to_half_ntimes()
         self.old_size = (scaled_img.shape[0], scaled_img.shape[1])
 
         # Crop and scale the image further if needed
         if self.old_size!=self.new_size:
-            crop_val, red_fact = self.optimal_reduction_factor(list(self.old_size), list(self.new_size))
+            crop_val, red_fact = self.optimal_reduction_factor(list(self.old_size), list(self.new_size), crop)
             print("crop_val, red_fact:", crop_val, red_fact)
         
             # Crop img
-            down_scale = DownScale(scaled_img, (self.old_size[0]-crop_val[0], self.old_size[1]-crop_val[1])) 
-            self.img = down_scale.crop(scaled_img, crop_val[0], crop_val[1])
-            self.old_size = self.img.shape[0], self.img.shape[1]
-            print("cropped img to size: ", self.img.shape)
+            if crop:
+                down_scale = DownScale(scaled_img, (self.old_size[0]-crop_val[0], self.old_size[1]-crop_val[1])) 
+                self.img   = down_scale.crop(scaled_img, crop_val[0], crop_val[1])
+                self.old_size = self.img.shape[0], self.img.shape[1]
+                print("cropped img to size: ", self.img.shape)
             
             # Resize if needed.
             if self.old_size!=self.new_size:
                scaled_img = self.resize_by_non_int_fact(red_fact, method)       
-    
+            else:
+               scaled_img = self.img.copy()
+
         return scaled_img    
 ##########################################################################
 class UpScale(Scale):
