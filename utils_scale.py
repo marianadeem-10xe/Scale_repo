@@ -37,7 +37,7 @@ class Scale:
                 fact = fraction[0]/fraction[1]
                 if crop==False:
                     min_crop_val = [0, 0]
-                    if curr_size[i]*fact==required_size[i]:
+                    if np.round(curr_size[i]*fact)==np.round(required_size[i]):
                         min_fact[i] = fraction  
                 else:
                     crop_val = curr_size[i] - (required_size[i]/fact)
@@ -97,8 +97,8 @@ class Scale:
                 self.old_size = (self.img.shape[0], self.img.shape[1])
 
                 print("downscaling {} by: ".format("height" if i==0 else "width"), downscale_fact)
-                downscale_to_size = (self.old_size[0]//downscale_fact, self.old_size[1]) if i==0 else \
-                                    (self.old_size[0], self.old_size[1]//downscale_fact)    
+                downscale_to_size = (int(np.round(self.old_size[0]/downscale_fact)), self.old_size[1]) if i==0 else \
+                                    (self.old_size[0], int(np.round(self.old_size[1]//downscale_fact)))    
                 downscale     = DownScale(self.img, downscale_to_size)
                 self.img      = downscale.execute(method[1])
                 self.old_size = (self.img.shape[0], self.img.shape[1])
@@ -268,9 +268,9 @@ class DownScale(Scale):
         self.scale_height = self.new_size[0]/self.old_size[0]             
         self.scale_width = self.new_size[1]/self.old_size[1]
         
-        assert self.old_size[0]%self.new_size[0]==0 and self.old_size[1]%self.new_size[1]==0, \
+        """assert self.old_size[0]%self.new_size[0]==0 and self.old_size[1]%self.new_size[1]==0, \
             "scale factor is not an integer."
-        
+        """
         box_height = int(np.ceil(1/self.scale_height)) 
         box_width  = int(np.ceil(1/self.scale_width))
         
