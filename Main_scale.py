@@ -1,19 +1,19 @@
 import os
 import cv2
 import numpy as np
-from utils_scale import Scale, Evaluation, Results
+from utils_scale import Scale,DownScale, Evaluation, Results
 from matplotlib import pyplot as plt
 
 
 folder           = "./results/Graph images/rescaled with GIMP/1944x2592"
-GT_path          = "./results/Graph images/rescaled with GIMP/1.5_scale_fact/"
+GT_path          = "./results/Graph images/rescaled with GIMP/0.5_scale_fact/"
 size             = (1944, 2592, 3)          # (height, width)
 # scale_to_size   = (1440, 2560, 3)
 upscale_method   = ""
 downscale_method = ""
 result           = Results()
 
-for scale_to_size in [(int(np.round(1944*3/2)), int(np.round(2592*3/2)),3)]:#,(1440, 2560, 3), (720, 1280, 3), (480, 640, 3), (1080,1920, 3)]:
+for scale_to_size in [(int(np.round(1944*0.5)), int(np.round(2592*0.5)),3)]:#,(1440, 2560, 3), (720, 1280, 3), (480, 640, 3), (1080,1920, 3)]:
     for filename in os.listdir(folder):
         print("scaling img: ", filename)
         output_filename = "./results/Graph images/Scale algo/" + filename.split("_")[0] + "_{}x{}.jpg".format(scale_to_size[0], scale_to_size[1]) 
@@ -40,8 +40,8 @@ for scale_to_size in [(int(np.round(1944*3/2)), int(np.round(2592*3/2)),3)]:#,(1
         for i in range(3):
             ch_arr = raw_file[:, :, i]
             print(ch_arr.shape)
-            scale = Scale(ch_arr, scale_to_size)
-            scaled_img[:, :, i] = scale.execute([upscale_method, downscale_method], False)
+            scale = DownScale(ch_arr, scale_to_size)
+            scaled_img[:, :, i] = scale.execute(downscale_method) #[upscale_method, downscale_method], False)
 
         print("scaled size: ", scaled_img.shape)        
         print("-"*50)

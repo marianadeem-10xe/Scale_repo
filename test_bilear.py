@@ -4,8 +4,8 @@ import numpy as np
 import utils_scale as utils
 import matplotlib.pyplot as plt
 
-file_path = "./results/Graph images/rescaled with GIMP/1944x2592/ColorDifferenceError_2592x1944.png"
-GT_path   = "./results/Graph images/rescaled with GIMP/1.5_scale_fact/ColorDifferenceError_3888x2916.png"
+file_path = "./results/Graph images/rescaled with GIMP/1944x2592/ColorDifferenceError_720x540.png"
+GT_path   = "./results/Graph images/rescaled with GIMP/1944x2592/ColorDifferenceError_2160x1620.png"
 filename  = os.path.basename(file_path)
 scale_to_size = (int(1944*3), int(2592*3), 3) 
 result = utils.Results()
@@ -16,12 +16,6 @@ cv2_scaled = cv2.resize(img, (scale_to_size[1], scale_to_size[0]), interpolation
  # Read ground truth img (rescaled using GIMP software with bicubic method)
 GT_file  = cv2.imread(GT_path)
 GT_file  = cv2.cvtColor(GT_file, cv2.COLOR_BGR2RGB)
-"""
-# To compare cv2 upscaling (any size-->1944x2592) with the original img
-org_path = "./results/Graph images/GIMP_1944x2592/ColorDifferenceError_2592x1944.png"
-original_img  = cv2.cvtColor(cv2.imread(org_path), cv2.COLOR_BGR2RGB)
-"""
-
 
 # To compare with implemented algorithm
 scaled_img = np.empty(scale_to_size, dtype="uint16")
@@ -34,3 +28,13 @@ eval = utils.Evaluation(GT_file, scaled_img)
 
 output_filename = "./results/Graph images/Scale algo/" + filename.split("_")[0] + "_{}x{}.jpg".format(scale_to_size[0], scale_to_size[1]) 
 plt.imsave(output_filename, scaled_img.astype("uint8"))
+
+##########################################################
+
+"""arr = np.array([[10,20], [30,40]])
+cv2_scaled = cv2.resize(arr.astype("uint8"), (4,4),interpolation=cv2.INTER_LINEAR)
+scale = utils.UpScale(arr, (4,4))
+scaled = scale.bilinear_interpolation()
+print(cv2_scaled)
+print(scaled)"""
+

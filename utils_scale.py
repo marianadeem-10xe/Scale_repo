@@ -171,6 +171,56 @@ class UpScale(Scale):
                 scaled_img[y,x] = self.img[y_nearest, x_nearest]
         return scaled_img
     
+    def bilinear_interpolation(self):
+        old_height, old_width = self.img.shape[0], self.img.shape[1]
+        new_height, new_width = self.new_size[0], self.new_size[1]
+        scale_height , scale_width = new_height/old_height, new_width/old_width
+        
+        scaled_img  = np.zeros((new_height, new_width), dtype = "float32")
+        old_coor = lambda a, scale_fact: (a+0.5)/scale_fact - 0.5
+        
+        for y in range(new_height):
+            for x in range(new_width):
+
+                # Coordinates in old image
+                #old_y, old_x = y/scale_height, x/scale_width
+                old_y, old_x = old_coor(y, scale_height), old_coor(x, scale_width)
+
+                # x1 = min(int(np.floor(old_x)), old_width-1)
+                # y1 = min(int(np.floor(old_y)), old_height-1)
+                # x2 = min(int(np.ceil(old_x)), old_width-1)
+                # y2 = min(int(np.ceil(old_y)), old_height-1)
+                
+                x1 = 0 if np.floor(old_x)<0 else min(int(np.floor(old_x)), old_width-1)
+                y1 = 0 if np.floor(old_y)<0 else min(int(np.floor(old_y)), old_height-1)
+                x2 = 0 if np.ceil(old_x)<0 else min(int(np.ceil(old_x)), old_width-1)
+                y2 = 0 if np.ceil(old_y)<0 else min(int(np.ceil(old_y)), old_height-1)
+                
+                # Get four neghboring pixels
+                Q11 = self.img[y1, x1]
+                Q12 = self.img[y1, x2]
+                Q21 = self.img[y2, x1]
+                Q22 = self.img[y2, x2]
+
+                # Interpolating P1 and P2
+                weight_right = old_x- np.floor(old_x)
+                weight_left  = 1-weight_right 
+                P1 = weight_left*Q11 + weight_right*Q12
+                P2 = weight_left*Q21 + weight_right*Q22
+
+                # The case where the new pixel lies between two pixels
+                if x1 == x2:
+                    P1 = Q11
+                    P2 = Q22
+
+                # Interpolating P
+                weight_bottom = old_y - np.floor(old_y)
+                weight_top = 1-weight_bottom 
+                P = weight_top*P1 + weight_bottom*P2    
+
+                scaled_img[y,x] = np.floor(P)
+        return scaled_img.astype("uint16")
+
     def scale_bilinear_method(self):
         
         """Upscale/Downscale an image using bilinear interpolation method
