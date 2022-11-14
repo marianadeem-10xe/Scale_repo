@@ -7,156 +7,54 @@ class Scale:
         self.img = img.astype("float32")
         self.new_size = new_size
         self.old_size = (img.shape[0], img.shape[1])
-    
+        self.output_sizes = [(1944,2592), (2304,1296), (1920,1080), (1280,720), (640,360)]
+
     def round_off(self, n):
         if n-int(n)<0.5:
             return np.floor(n)
         return np.ceil(n)    
-
-    def optimal_reduction_factor(self, curr_size, required_size, crop):
-        
-        """
-        Compute the minimum number of rows and columns to be cropped 
-        such that after cropping, the size of the array becomes a multiple 
-        of the required output size i.e. 
-                required_size = q*cropped_size 
-        where q is taken from [3/4, 1/5, 2/5, 3/5, 4/5, 5/6, 4/7].
-        
-        Output: 
-        min_crop_val: list with number of rows and columns to be cropped  
-        min_red_fact: list with scale fcators for rows and columns. Enteries 
-                      of the list are tuples where first entry is the numerator and the second
-                      is the denominator of the no-integer scale factor. If reduction factor is 
-                      zero, it means no scaling is needed after cropping the array.
-        """
-        # list of reduction factors: [3/4, 1/5, 2/5, 3/5, 4/5, 5/6, 4/7]
-        
-        print("Computing reduction factors...")
-        numertaors   = [3,3,1,2,3,4,5,4]
-        denominators = [2,4,5,5,5,5,6,7]
-        min_crop_val, min_fact = [np.inf, np.inf], [1,1]  
-
-        for i in range(2):
-            for fraction in zip(numertaors, denominators):
-                # crop then scale: (old_size - crop) * reduction factor = new_size
-                fact = fraction[0]/fraction[1]
-                if crop==False:
-                    min_crop_val = [0, 0]
-                    if np.round(curr_size[i]*fact)==np.round(required_size[i]):
-                        min_fact[i] = fraction  
-                else:
-                    crop_val = curr_size[i] - (required_size[i]/fact)
-                    if crop_val < min_crop_val[i] and crop_val>0: 
-                        min_crop_val[i], min_fact[i] = int(crop_val), fraction
-        
-        # if all factors fail, crop directly
-        while np.inf in min_crop_val:
-            idx = min_crop_val.index(np.inf)
-            min_crop_val[idx] = curr_size[idx] - required_size[idx]
-        return min_crop_val, min_fact
     
-    def downscale_to_half_ntimes(self):
-       
-        """Reduce the input img (2D array) to half its size as many times as possible."""
+    def downscale_by_int_factor(self, mode="average"):
         
-        scale_fact = 1
-        while (self.old_size[0]%2 == 0 and self.old_size[0]//2 > self.new_size[0]) and \
-              (self.old_size[1]%2 == 0 and self.old_size[1]//2 > self.new_size[1]):
-              scale_fact*=2
-              self.old_size = (self.old_size[0]//2, self.old_size[1]//2)
-
-        if scale_fact==1:
-            return self.img
+        """
+        Downscale a 2D array by an integer scale factor.
         
-        print("Downscaling height and width by ", scale_fact)        
-        down_scale = DownScale(self.img, (self.old_size[0], self.old_size[1]))
-        self.img   = down_scale.downscale_by_int_factor()
-        return self.img
-
-    def resize_by_non_int_fact(self, red_fact, method):
+        Assumption: new_size is a integer multiple of old image.
         
-        """"
-        Resize 2D array by non-inteeger factor n/d.
-        Firstly, the array is upsacled n times then downscaled d times.
+        Parameters
+        ----------
+        mode: str, "average" or max
+        Method to downscale a window to a single pixel.
 
-        Parameter:
-        ---------
-        red_fact: list with scale factors for height and width.
-        method: list with algorithms used for upscaling(at index 0) and downscaling(at index 1).
-        Output: scaled img
+        Output: 16 bit Scaled image.  
         """
         
-        for i in range(2):
-            if red_fact[i]==1:  # means that no scaling is required (for both height and width)
-                continue
-            else:
-                # reduction factor = n/d    --->  Upscale the cropped image n times then downscale d times
-                upscale_fact   = red_fact[i][0] 
-                downscale_fact = red_fact[i][1]
+        self.scale_height = self.new_size[0]/self.old_size[0]             
+        self.scale_width = self.new_size[1]/self.old_size[1]
+        
+        """assert self.old_size[0]%self.new_size[0]==0 and self.old_size[1]%self.new_size[1]==0, \
+            "scale factor is not an integer."
+        """
+        box_height = int(np.ceil(1/self.scale_height)) 
+        box_width  = int(np.ceil(1/self.scale_width))
+        
+        scaled_img = np.zeros((self.new_size[0], self.new_size[1]), dtype = "float32")
+
+        for y in range(self.new_size[0]):
+            for x in range(self.new_size[1]):
                 
-                print("upscaling {} by: ".format("height" if i==0 else "width"), upscale_fact)
-                upscale_to_size = (upscale_fact*self.old_size[0], self.old_size[1]) if i==0 else \
-                                    (self.old_size[0], upscale_fact*self.old_size[1])
-                upscale  = UpScale(self.img, upscale_to_size)
-                self.img = upscale.execute(method[0])
-                self.old_size = (self.img.shape[0], self.img.shape[1])
-
-                print("downscaling {} by: ".format("height" if i==0 else "width"), downscale_fact)
-                downscale_to_size = (int(np.round(self.old_size[0]/downscale_fact)), self.old_size[1]) if i==0 else \
-                                    (self.old_size[0], int(np.round(self.old_size[1]//downscale_fact)))    
-                downscale     = DownScale(self.img, downscale_to_size)
-                self.img      = downscale.execute(method[1])
-                self.old_size = (self.img.shape[0], self.img.shape[1])
+                y_old = int(np.floor(y/self.scale_height))
+                x_old = int(np.floor(x/self.scale_width))
                 
-        return self.img
-
-    def execute(self, method=["Nearest_Neighbor", ""], crop=True):
+                y_end = min(y_old + box_height, self.old_size[0])
+                x_end = min(x_old + box_width, self.old_size[1])
+                
+                if mode == "max":
+                    scaled_img[y,x] = np.amax(self.img[y_old:y_end, x_old:x_end])
+                else:     
+                    scaled_img[y,x] = np.average(self.img[y_old:y_end, x_old:x_end])
         
-        """
-        Rescale an input 2D array of size 2592x1944 to one of the following sizes:
-        - 2560x1440
-        - 1920x1080
-        - 1280x720
-        - 640x480
-
-        Step1: Downscale array by an even factor.
-        Step2: Crop array
-        Step3: Downscale by a non-integer factor.
-
-        Output: scaled array. 
-        """
-        output_h = [1440, 1080, 720, 480]
-        output_w = [2560, 1920, 1280, 640]
-        
-        """assert self.new_size[0] in output_h or self.new_size[1] in output_w,\
-            "Output size must be one of the following:\n"\
-            "- 2560x1440,\n- 1920x1080,\n- 1280x720,\n- 640x480"
-        """   
-        
-        scaled_img    = self.downscale_to_half_ntimes()
-        self.old_size = (scaled_img.shape[0], scaled_img.shape[1])
-
-        # Crop and scale the image further if needed
-        if self.old_size!=self.new_size:
-            crop_val, red_fact = self.optimal_reduction_factor(list(self.old_size), list(self.new_size), crop)
-            print("crop_val, red_fact:", crop_val, red_fact)
-        
-            # Crop img
-            if crop:
-                down_scale = DownScale(scaled_img, (self.old_size[0]-crop_val[0], self.old_size[1]-crop_val[1])) 
-                self.img   = down_scale.crop(scaled_img, crop_val[0], crop_val[1])
-                self.old_size = self.img.shape[0], self.img.shape[1]
-                print("cropped img to size: ", self.img.shape)
-            
-            # Resize if needed.
-            if self.old_size!=self.new_size:
-               scaled_img = self.resize_by_non_int_fact(red_fact, method)       
-            else:
-               scaled_img = self.img.copy()
-
-        return scaled_img    
-##########################################################################
-class UpScale(Scale):
+        return np.round(scaled_img).astype("uint16")
     
     def scale_nearest_neighbor(self):
         
@@ -218,7 +116,84 @@ class UpScale(Scale):
                 P = weight_top*P1 + weight_bottom*P2    
 
                 scaled_img[y,x] = self.round_off(P)
-        return scaled_img.astype("uint16") 
+        return scaled_img.astype("uint16")
+
+    def resize_by_non_int_fact(self, red_fact, method):
+        
+        """"
+        Resize 2D array by non-inteeger factor n/d.
+        Firstly, the array is upsacled n times then downscaled d times.
+
+        Parameter:
+        ---------
+        red_fact: list with scale factors for height and width.
+        method: list with algorithms used for upscaling(at index 0) and downscaling(at index 1).
+        Output: scaled img
+        """
+        
+        for i in range(2):
+            if red_fact[i]==1:  # means that no scaling is required (for both height and width)
+                continue
+            else:
+                # reduction factor = n/d    --->  Upscale the cropped image n times then downscale d times
+                upscale_fact   = red_fact[i][0] 
+                downscale_fact = red_fact[i][1]
+                
+                print("upscaling {} by: ".format("height" if i==0 else "width"), upscale_fact)
+                upscale_to_size = (upscale_fact*self.old_size[0], self.old_size[1]) if i==0 else \
+                                    (self.old_size[0], upscale_fact*self.old_size[1])
+                # upscale  = UpScale(self.img, upscale_to_size)
+                if method[0]=="Nearest_Neighbor":
+                    self.img = self.scale_nearest_neighbor()
+                else:
+                    self.img = self.bilinear_interpolation()
+
+                self.old_size = (self.img.shape[0], self.img.shape[1])
+
+                print("downscaling {} by: ".format("height" if i==0 else "width"), downscale_fact)
+                downscale_to_size = (int(np.round(self.old_size[0]/downscale_fact)), self.old_size[1]) if i==0 else \
+                                    (self.old_size[0], int(np.round(self.old_size[1]//downscale_fact)))    
+                # downscale     = DownScale(self.img, downscale_to_size)
+                if method[1]=="Nearest_Neighbor":
+                    self.img = self.scale_nearest_neighbor()
+                else:
+                    self.img = self.bilinear_interpolation()
+                    
+                self.old_size = (self.img.shape[0], self.img.shape[1])
+                
+        return self.img
+    
+    def get_red_fact(self):
+        img_h, img_w = self.old_size[0], self.old_size[1]
+        
+        red_fcat_h = [(8,9), (5,6), (2,3), (1,2), (1,1)] 
+        red_fcat_w = [(2,3), (5,6), (2,3), (1,2), (1,1)]
+        
+        size_idx = self.output_sizes.index((img_h,img_w))
+        
+        return [red_fcat_h[size_idx], red_fcat_w(size_idx)]  
+    
+    def execute(self, method=["Nearest_Neighbor", ""], crop=True):
+        
+        """
+        Rescale an input 2D array of size 2592x1944 to one of the following sizes:
+        - 2304x1296
+        - 1920x1080
+        - 1280x720
+        - 640x360
+
+        Output: scaled array. 
+        """
+        while self.old_size==self.new_size:
+            red_fact = self.get_red_fact()
+            scaled_img    = self.resize_by_non_int_fact(red_fact, method)
+            self.old_size = (scaled_img.shape[0], scaled_img.shape[1])
+
+        return scaled_img    
+##########################################################################
+class UpScale(Scale):
+    
+     
 
     def execute(self, method):
         print("upscaling using {}".format(method if method else "Bilinear Interpolation"))
@@ -227,77 +202,7 @@ class UpScale(Scale):
         return self.bilinear_interpolation()
 
 ##########################################################################
-class DownScale(Scale):
-    
-    def crop(self, img, rows_to_crop=0, cols_to_crop=0):
-        
-        """
-        Crop 2D array.
-
-        Parameter:
-        ---------
-        img: image (2D array) to be cropped.
-        rows_to_crop: Number of rows to crop. If it is an even integer, 
-                      equal number of rows are cropped from either side of the image. 
-                      Otherwise the image is cropped from the extreme right.
-        cols_to_crop: Number of columns to crop. Works exactly as rows_to_crop.
-        
-        Output: cropped image
-        """
-        
-        if rows_to_crop:
-            if rows_to_crop%2==0:
-                img = img[rows_to_crop//2:-rows_to_crop//2, :]
-            else:
-                img = img[0:-1, :]
-        if cols_to_crop:         
-            if cols_to_crop%2==0:
-                img = img[:, cols_to_crop//2:-cols_to_crop//2]
-            else:
-                img = img[:, 0:-1] 
-        return img
-
-    def downscale_by_int_factor(self, mode="average"):
-        
-        """
-        Downscale a 2D array by an integer scale factor.
-        
-        Assumption: new_size is a integer multiple of old image.
-        
-        Parameters
-        ----------
-        mode: str, "average" or max
-        Method to downscale a window to a single pixel.
-
-        Output: 16 bit Scaled image.  
-        """
-        
-        self.scale_height = self.new_size[0]/self.old_size[0]             
-        self.scale_width = self.new_size[1]/self.old_size[1]
-        
-        """assert self.old_size[0]%self.new_size[0]==0 and self.old_size[1]%self.new_size[1]==0, \
-            "scale factor is not an integer."
-        """
-        box_height = int(np.ceil(1/self.scale_height)) 
-        box_width  = int(np.ceil(1/self.scale_width))
-        
-        scaled_img = np.zeros((self.new_size[0], self.new_size[1]), dtype = "float32")
-
-        for y in range(self.new_size[0]):
-            for x in range(self.new_size[1]):
-                
-                y_old = int(np.floor(y/self.scale_height))
-                x_old = int(np.floor(x/self.scale_width))
-                
-                y_end = min(y_old + box_height, self.old_size[0])
-                x_end = min(x_old + box_width, self.old_size[1])
-                
-                if mode == "max":
-                    scaled_img[y,x] = np.amax(self.img[y_old:y_end, x_old:x_end])
-                else:     
-                    scaled_img[y,x] = np.average(self.img[y_old:y_end, x_old:x_end])
-        
-        return np.round(scaled_img).astype("uint16")    
+class DownScale(Scale):    
 
     def execute(self, method):
         print("downscaling using {}".format(method if method else "Bilinear Interpolation"))
