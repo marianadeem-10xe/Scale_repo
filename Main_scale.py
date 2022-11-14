@@ -1,19 +1,19 @@
 import os
 import cv2
 import numpy as np
-from utils_scale import Scale,DownScale, Evaluation, Results
+from utils_scale import Scale,DownScale,UpScale, Evaluation, Results
 from matplotlib import pyplot as plt
 
 
-folder           = "./results/Graph images/rescaled with GIMP/1944x2592"
-GT_path          = "./results/Graph images/rescaled with GIMP/0.5_scale_fact/"
-size             = (1944, 2592, 3)          # (height, width)
+folder           = "./results/Graph images/rescaled with GIMP/640x480/"
+GT_path          = "./results/Graph images/rescaled with GIMP/3_scale_fact/"
+size             = (480, 640, 3)          # (height, width)
 # scale_to_size   = (1440, 2560, 3)
 upscale_method   = ""
 downscale_method = ""
 result           = Results()
 
-for scale_to_size in [(int(np.round(1944*0.5)), int(np.round(2592*0.5)),3)]:#,(1440, 2560, 3), (720, 1280, 3), (480, 640, 3), (1080,1920, 3)]:
+for scale_to_size in [(int(np.round(480*3)), int(np.round(640*3)),3)]:#,(1440, 2560, 3), (720, 1280, 3), (480, 640, 3), (1080,1920, 3)]:
     for filename in os.listdir(folder):
         print("scaling img: ", filename)
         output_filename = "./results/Graph images/Scale algo/" + filename.split("_")[0] + "_{}x{}.jpg".format(scale_to_size[0], scale_to_size[1]) 
@@ -30,7 +30,7 @@ for scale_to_size in [(int(np.round(1944*0.5)), int(np.round(2592*0.5)),3)]:#,(1
         cv2_scaled_img = cv2.resize(raw_file, (scale_to_size[1], scale_to_size[0]), interpolation= cv2.INTER_LINEAR)
         plt.imsave("./results/Graph images/cv2_results/cv2_{}_{}x{}.png".format(filename.split("_")[0], scale_to_size[0], scale_to_size[1]), cv2_scaled_img)
         
-        assert raw_file.shape==size, "Input size must be 2592x1944!"
+        # assert raw_file.shape==size, "Input size must be 2592x1944!"
 
         print("-"*50)
         print("original size: ", raw_file.shape)
@@ -40,8 +40,8 @@ for scale_to_size in [(int(np.round(1944*0.5)), int(np.round(2592*0.5)),3)]:#,(1
         for i in range(3):
             ch_arr = raw_file[:, :, i]
             print(ch_arr.shape)
-            scale = DownScale(ch_arr, scale_to_size)
-            scaled_img[:, :, i] = scale.execute(downscale_method) #[upscale_method, downscale_method], False)
+            scale = UpScale(ch_arr, scale_to_size)
+            scaled_img[:, :, i] = scale.execute("")#[upscale_method, downscale_method], False) #downscale_method) 
 
         print("scaled size: ", scaled_img.shape)        
         print("-"*50)
