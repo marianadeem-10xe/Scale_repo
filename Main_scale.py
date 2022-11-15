@@ -9,7 +9,7 @@ folder          = "./results/Graph images/rescaled with GIMP/2592x1944/"
 GT_path          = "./results/Graph images/rescaled with GIMP/"
 size            = (1944, 2592, 3)          # (height, width)
 # scale_to_size   = (1440, 2560, 3)
-upscale_method = "Nearest_Neighbor"
+upscale_method = ""
 downscale_method = ""
 result          = Results()
 
