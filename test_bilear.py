@@ -4,10 +4,18 @@ import numpy as np
 import utils_scale as utils
 import matplotlib.pyplot as plt
 
-file_path = "./results/Graph images/rescaled with GIMP/640x480/ColorDifferenceError_640x480.png"
+# Path variables
+file_path = "./results/Graph images/rescaled with GIMP/1944x2592/ColorDifferenceError_2592x1944.png"
 # GT_path   = "./results/Graph images/rescaled with GIMP/1944x2592/ColorDifferenceError_1944x2592.png"
 filename  = os.path.basename(file_path)
-scale_to_size = (int(540*5), int(720*5), 3) 
+
+# parameters
+scale_to_size = (3000, 3000) 
+is_hardware   = True
+Algo = "Nearest_Neighbor"
+upscale_method = "Nearest_Neighbor"
+downscale_method = ""
+
 result = utils.Results()
 
 img = cv2.cvtColor(cv2.imread(file_path), cv2.COLOR_BGR2RGB)
@@ -18,10 +26,11 @@ cv2_scaled = cv2.resize(img, (scale_to_size[1], scale_to_size[0]), interpolation
 # GT_file  = cv2.cvtColor(GT_file, cv2.COLOR_BGR2RGB)
 
 # To compare with implemented algorithm
-scaled_img = np.empty(scale_to_size, dtype="uint16")
+"""scaled_img = np.empty((scale_to_size[0], scale_to_size[1],3), dtype="uint16")
+
 for i in range(3):
-    scale = utils.UpScale(img[:,:,i], (scale_to_size[0], scale_to_size[1]))
-    scaled_img[:,:,i] = scale.bilinear_interpolation()
+    scale = utils.Scale(img[:,:,i], scale_to_size)
+    scaled_img[:,:,i] = scale.execute(Algo, is_hardware, [upscale_method, downscale_method])
 
 eval = utils.Evaluation(scaled_img, cv2_scaled)
 # eval = utils.Evaluation(GT_file, cv2_scaled)
@@ -29,6 +38,14 @@ eval = utils.Evaluation(scaled_img, cv2_scaled)
 
 output_filename = "./results/Graph images/" + filename.split("_")[0] + "_{}x{}.jpg".format(scale_to_size[0], scale_to_size[1]) 
 # plt.imsave(output_filename, scaled_img.astype("uint8"))
+print(scaled_img.shape)"""
+
+##########################################################
+# Test crop class
+crop = utils.crop(img, scale_to_size)
+cropped_img = crop.execute()
+output_filename = "./results/Graph images/" + filename.split("_")[0] + "_{}x{}.jpg".format(scale_to_size[0], scale_to_size[1]) 
+plt.imsave(output_filename, cropped_img.astype("uint8"))
 
 ##########################################################
 """arr = np.array([[10,20], [30,40]])
