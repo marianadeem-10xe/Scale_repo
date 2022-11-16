@@ -1,7 +1,7 @@
 from math import log10, sqrt
 import numpy as np
 import pandas as pd
-
+from scipy.signal import correlate2d
 class Scale:
     def __init__(self, img, new_size):
         self.img = img.astype("float32")
@@ -16,6 +16,20 @@ class Scale:
             return np.floor(n)
         return np.ceil(n)    
     
+    def downscale_conv(self, new_size):
+        
+        scale_height = new_size[0]/self.old_size[0]             
+        scale_width  = new_size[1]/self.old_size[1]
+
+        box_height = int(np.ceil(1/scale_height)) 
+        box_width  = int(np.ceil(1/scale_width))
+        
+        scaled_img = np.zeros((new_size[0], new_size[1]), dtype = "float32")
+        kernel = np.ones((box_height, box_width))/(box_height*box_width)
+        
+        scaled_img = stride_convolve2d(self.img, kernel)
+        return np.round(scaled_img).astype("uint16")
+
     def downscale_by_int_factor(self, new_size, mode="average"):
         
         """
@@ -269,6 +283,12 @@ class crop:
             cropped_img[:, :, i] = self.crop(self.img[:, :, i],crop_rows, crop_cols)
         
         return cropped_img
+
+########################################################################## 
+
+def stride_convolve2d(matrix, kernel):
+    return correlate2d(matrix, kernel, mode="valid")[::kernel.shape[0], ::kernel.shape[1]]
+
 ########################################################################## 
 # Object to compile results in a csv file
 class Results:
