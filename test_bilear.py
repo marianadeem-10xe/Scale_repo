@@ -12,14 +12,14 @@ filename  = os.path.basename(file_path)
 # parameters
 scale_to_size = (1296, 2304) 
 is_hardware   = True
-Algo = "Nearest_Neighbor"
-upscale_method = "Nearest_Neighbor"
+Algo = ""
+upscale_method = ""
 downscale_method = ""
 
 result = utils.Results()
 
 img = cv2.cvtColor(cv2.imread(file_path), cv2.COLOR_BGR2RGB)
-"""cv2_scaled = cv2.resize(img, (scale_to_size[1], scale_to_size[0]), interpolation=cv2.INTER_LINEAR)
+cv2_scaled = cv2.resize(img, (scale_to_size[1], scale_to_size[0]), interpolation=cv2.INTER_LINEAR)
 
  # Read ground truth img (rescaled using GIMP software with bicubic method)
 # GT_file  = cv2.imread(GT_path)
@@ -38,11 +38,11 @@ eval = utils.Evaluation(scaled_img, cv2_scaled)
 
 output_filename = "./results/Graph images/" + filename.split("_")[0] + "_{}x{}.jpg".format(scale_to_size[0], scale_to_size[1]) 
 # plt.imsave(output_filename, scaled_img.astype("uint8"))
-print(scaled_img.shape)"""
+print(scaled_img.shape)
 
 ##########################################################
 # Test downscale_by_int_factor with convolution
-scaled_img = np.empty((1944//3, 2592//3, 3), dtype="uint16")
+"""scaled_img = np.empty((1944//3, 2592//3, 3), dtype="uint16")
 scaled_img_conv = np.empty((1944//3, 2592//3, 3), dtype="uint16")
 
 for i in range(3):
@@ -50,7 +50,7 @@ for i in range(3):
     scaled_img[:,:,i] = scale.downscale_by_int_factor((1944//3, 2592//3))
     scaled_img_conv[:,:,i] = scale.downscale_conv((1944//3, 2592//3))
     
-eval = utils.Evaluation(scaled_img, scaled_img_conv)
+eval = utils.Evaluation(scaled_img, scaled_img_conv)"""
 
 ##########################################################
 # Test crop class

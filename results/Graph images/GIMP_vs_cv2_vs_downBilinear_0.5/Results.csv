@@ -1,6 +1,0 @@
-Filename,Scaled from,Scaled to,cv_MSE,cv2_PSNR,Implemented_algo_MSE  ,Implemented_algo_PSNR  
-cv_Density2_2592x1944.png,"(1944, 2592, 3)","(972, 1296, 3)",0.31,74.70,0.33,74.48
-cv_testimg_2592x1944.png,"(1944, 2592, 3)","(972, 1296, 3)",6.70,61.39,6.81,61.32
-cv_Density_2592x1944.png,"(1944, 2592, 3)","(972, 1296, 3)",20.13,56.61,20.15,56.61
-cv_ColorDifferenceError_2592x1944.png,"(1944, 2592, 3)","(972, 1296, 3)",1.12,69.16,1.20,68.86
-cv_reschart_2592x1944.png,"(1944, 2592, 3)","(972, 1296, 3)",0.53,72.42,0.56,72.18

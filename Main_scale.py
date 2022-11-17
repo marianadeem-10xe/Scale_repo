@@ -16,8 +16,8 @@ Algo             = "Nearest_Neighbor"
 upscale_method   = "Nearest_Neighbor"
 downscale_method = ""
 result           = Results()
-
-for scale_to_size in [(1296, 2304), (1080,1920), (720, 1280), (480, 640)]:#(int(np.round(1944*3)), int(np.round(2592*3)))]:
+# (1296, 2304),
+for scale_to_size in [(1080,1920), (720, 1280), (480, 640)]:#(int(np.round(1944*3)), int(np.round(2592*3)))]:
     for filename in os.listdir(folder):
         # print(GT_path + "{}x{}/".format(scale_to_size[1], scale_to_size[0])+filename.split("_")[0] + "_{}x{}.png".format(scale_to_size[1], scale_to_size[0]));exit()
         print("scaling img: ", filename)

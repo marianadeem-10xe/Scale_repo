@@ -16,61 +16,31 @@ class Scale:
             return np.floor(n)
         return np.ceil(n)    
     
-    def downscale_conv(self, new_size):
-        
-        scale_height = new_size[0]/self.old_size[0]             
-        scale_width  = new_size[1]/self.old_size[1]
-
-        box_height = int(np.ceil(1/scale_height)) 
-        box_width  = int(np.ceil(1/scale_width))
-        
-        scaled_img = np.zeros((new_size[0], new_size[1]), dtype = "float32")
-        kernel = np.ones((box_height, box_width))/(box_height*box_width)
-        
-        scaled_img = stride_convolve2d(self.img, kernel)
-        return np.round(scaled_img).astype("uint16")
-
-    def downscale_by_int_factor(self, new_size, mode="average"):
+    def downscale_by_int_factor(self, new_size):
         
         """
-        Downscale a 2D array by an integer scale factor.
+        Downscale a 2D array by an integer scale factor using 2D convolution.
         
         Assumption: new_size is a integer multiple of old image.
         
         Parameters
         ----------
-        mode: str, "average" or max
-        Method to downscale a window to a single pixel.
+        new_size: Output size. It may or may not be different than self.new_size. 
 
-        Output: 16 bit Scaled image.  
+        Output: 16 bit scaled image in which each pixel is an average of box nxm 
+        determined by the scale factors.  
         """
-        print("Bilinear (window avergaing)... ")
-        
+
         scale_height = new_size[0]/self.old_size[0]             
         scale_width  = new_size[1]/self.old_size[1]
-        
-        """assert self.old_size[0]%self.new_size[0]==0 and self.old_size[1]%self.new_size[1]==0, \
-            "scale factor is not an integer."
-        """
+
         box_height = int(np.ceil(1/scale_height)) 
         box_width  = int(np.ceil(1/scale_width))
         
         scaled_img = np.zeros((new_size[0], new_size[1]), dtype = "float32")
-
-        for y in range(new_size[0]):
-            for x in range(new_size[1]):
-                
-                y_old = int(np.floor(y/scale_height))
-                x_old = int(np.floor(x/scale_width))
-                
-                y_end = min(y_old + box_height, self.old_size[0])
-                x_end = min(x_old + box_width, self.old_size[1])
-                
-                if mode == "max":
-                    scaled_img[y,x] = np.amax(self.img[y_old:y_end, x_old:x_end])
-                else:     
-                    scaled_img[y,x] = np.average(self.img[y_old:y_end, x_old:x_end])
+        kernel     = np.ones((box_height, box_width))/(box_height*box_width)
         
+        scaled_img = stride_convolve2d(self.img, kernel)
         return np.round(scaled_img).astype("uint16")
     
     def scale_nearest_neighbor(self, new_size):
@@ -205,6 +175,7 @@ class Scale:
 
         Output: scaled array. 
         """
+        
         if self.new_size == self.old_size:
            return self.img 
         else:
