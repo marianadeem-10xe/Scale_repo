@@ -7,13 +7,16 @@ from matplotlib import pyplot as plt
 
 folder          = "./results/Graph images/rescaled with GIMP/2592x1944/"
 GT_path          = "./results/Graph images/rescaled with GIMP/"
-size            = (1944, 2592, 3)          # (height, width)
-# scale_to_size   = (1440, 2560, 3)
-upscale_method = ""
-downscale_method = ""
-result          = Results()
 
-for scale_to_size in [(1440, 2560, 3), (720, 1280, 3), (480, 640, 3), (1080,1920, 3)]:
+size            = (1944, 2592)          # (height, width)
+# scale_to_size   = (1440, 2560)
+is_hardware      = False
+Algo             = "Nearest_Neighbor"
+upscale_method   = "Nearest_Neighbor"
+downscale_method = ""
+result           = Results()
+
+for scale_to_size in [(1944//2,2592//2),(1440, 2560), (960, 1280), (480, 640), (1080,1920)]:
     for filename in os.listdir(folder):
         print("scaling img: ", filename)
         output_filename = "./results/Graph images/Scale algo/" + filename.split("_")[0] + "_{}x{}.jpg".format(scale_to_size[0], scale_to_size[1]) 
@@ -30,18 +33,18 @@ for scale_to_size in [(1440, 2560, 3), (720, 1280, 3), (480, 640, 3), (1080,1920
         cv2_scaled_img = cv2.resize(raw_file, (scale_to_size[1], scale_to_size[0]), interpolation= cv2.INTER_LINEAR)
         plt.imsave("./results/Graph images/cv2_results/cv2_{}_{}x{}.png".format(filename.split("_")[0], scale_to_size[0], scale_to_size[1]), cv2_scaled_img)
         
-        assert raw_file.shape==size, "Input size must be 2592x1944!"
+        assert raw_file.shape==(size[0], size[1],3), "Input size must be 2592x1944!"
 
         print("-"*50)
         print("original size: ", raw_file.shape)
 
-        scaled_img = np.empty(scale_to_size, dtype="uint16")
+        scaled_img = np.empty((scale_to_size[0], scale_to_size[1], 3), dtype="uint16")
 
         for i in range(3):
             ch_arr = raw_file[:, :, i]
             print(ch_arr.shape)
             scale = Scale(ch_arr, scale_to_size)
-            scaled_img[:, :, i] = scale.execute([upscale_method, downscale_method])
+            scaled_img[:, :, i] = scale.execute(Algo, is_hardware,[upscale_method, downscale_method])
 
         print("scaled size: ", scaled_img.shape)        
         print("-"*50)
@@ -52,5 +55,6 @@ for scale_to_size in [(1440, 2560, 3), (720, 1280, 3), (480, 640, 3), (1080,1920
 
         plt.imsave(output_filename, scaled_img.astype("uint8"))
         print("image saved")
+        exit()
 result.save_csv("./results/Graph images", "Results")
 print("results saved.")
