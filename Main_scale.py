@@ -11,12 +11,12 @@ GT_path          = "./results/Graph images/rescaled with GIMP/"
 size            = (1944, 2592)          # (height, width)
 # scale_to_size   = (1440, 2560)
 is_hardware      = False
-Algo             = "Nearest_Neighbor"
+Algo             = ""
 upscale_method   = "Nearest_Neighbor"
 downscale_method = ""
 result           = Results()
 
-for scale_to_size in [(1944//2,2592//2),(1440, 2560), (960, 1280), (480, 640), (1080,1920)]:
+for scale_to_size in [(1440, 2560), (960, 1280), (480, 640), (1080,1920)]:
     for filename in os.listdir(folder):
         print("scaling img: ", filename)
         output_filename = "./results/Graph images/Scale algo/" + filename.split("_")[0] + "_{}x{}.jpg".format(scale_to_size[0], scale_to_size[1]) 

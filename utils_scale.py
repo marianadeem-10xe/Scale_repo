@@ -132,12 +132,8 @@ class Scale:
         
         else:
             if hardware_flag:
-                assert self.new_size in self.output_sizes, "Invalid output size {}!".format(self.new_size)
+                assert self.new_size in self.output_sizes, "Invalid output size {}!\n".format(self.new_size)
                 
-                """assert self.new_size[0] in output_h or self.new_size[1] in output_w,\
-                    "Output size must be one of the following:\n"\
-                    "- 2560x1440,\n- 1920x1080,\n- 1280x720,\n- 640x480"   
-                """
                 scaled_img    = self.downscale_to_half_ntimes()
                 self.old_size = (scaled_img.shape[0], scaled_img.shape[1])
 
@@ -174,6 +170,7 @@ class UpScale(Scale):
         Upscale/Downscale 2D array using Nearest Neighbor (NN) algorithm 
         by any (real number) scale factor.
         """
+        print("upscaling with Nearest Neighbor")
         old_height, old_width = self.img.shape[0], self.img.shape[1]
         new_height, new_width = self.new_size[0], self.new_size[1]
         scale_height , scale_width = new_height/old_height, new_width/old_width
@@ -191,6 +188,8 @@ class UpScale(Scale):
         
         """Upscale/Downscale 2D array using bilinear interpolation method
          using any (real number) factor."""
+
+        print("upscaling with Bilinear Interpolation")
 
         old_height, old_width      = self.img.shape[0], self.img.shape[1]
         new_height, new_width      = self.new_size[0], self.new_size[1]
@@ -236,7 +235,6 @@ class UpScale(Scale):
         return scaled_img.astype("uint16") 
 
     def execute(self, method):
-        print("upscaling using {}".format(method if method else "Bilinear Interpolation"))
         if method == "Nearest_Neighbor":
             return self.scale_nearest_neighbor()
         return self.bilinear_interpolation()
@@ -247,6 +245,9 @@ class DownScale(Scale):
     """This class is only used to downscale a 2D array by int factor."""
     
     def downscale_nearest_neighbor(self):
+
+        print("Downscaling with Nearest Neighbor.")
+
         old_height, old_width = self.img.shape[0], self.img.shape[1]
         new_height, new_width = self.new_size[0], self.new_size[1]
         
@@ -276,6 +277,7 @@ class DownScale(Scale):
         Output: 16 bit scaled image in which each pixel is an average of box nxm 
         determined by the scale factors.  
         """
+        print("Downscaling with Bilinear method.")
 
         scale_height = self.new_size[0]/self.old_size[0]             
         scale_width  = self.new_size[1]/self.old_size[1]
@@ -286,11 +288,10 @@ class DownScale(Scale):
         kernel     = np.ones((box_height, box_width))/(box_height*box_width)
         
         scaled_img = stride_convolve2d(self.img, kernel)
-        print(scaled_img.shape)
+
         return np.round(scaled_img).astype("uint16")    
 
     def execute(self, method):
-        print("downscaling using {}".format(method if method else "Bilinear Interpolation"))
         if method=="Nearest_Neighbor":
             return self.downscale_nearest_neighbor()
         return self.downscale_bilinear()  
