@@ -1,27 +1,36 @@
-from utils import demosaic_raw, white_balance, gamma
-from utils import scale_nearest_neighbor_v0, BiLinear_Scale
+from utils import Scale
 import numpy as np
+import yaml
+import cv2
 from matplotlib import pyplot as plt
 
 
-raw_path = "./HisiRAW_2592x1536_12bits_RGGB_Linear_20220407210640.raw"
-size     = (1536, 2592)          # (height, width)
-scale_to_size = (1080,1920)
+raw_path = "./Raw input/Reschart_2592x1536.jpg"
+config_path = './configs.yml'
 
-raw_file = np.fromfile(raw_path, dtype="uint16").reshape(size)
+#not to jumble any tags
+yaml.preserve_quotes = True
+
+with open(config_path, 'r') as f:
+    c_yaml = yaml.safe_load(f)
+
+# extract info
+sensor_info = c_yaml['sensor_info']
+parm_sca = c_yaml['scale']
+parm_cro = c_yaml['crop']
+
+size = (sensor_info["height"], sensor_info["width"])        # (height, width)
+scale_to_size = (parm_sca["new_height"], parm_sca["new_width"])
+
+img = cv2.cvtColor(cv2.imread(raw_path), cv2.COLOR_BGR2RGB)
 
 print("-"*50)
-print("original size: ", raw_file.shape)
-scale = BiLinear_Scale(raw_file, (2*1536,2*2592))
-scaled_img = scale.scale_bilinear()
+print("original size: ", img.shape)
+scale = Scale(img, sensor_info, parm_sca)
+scaled_img = scale.execute()
 print("scaled size: ", scaled_img.shape)        
 print("-"*50)
-
-blc_corr = np.clip(np.float32(scaled_img)-200, 0, 4095).astype("uint16")
-save_img = gamma(demosaic_raw(white_balance(blc_corr.copy(), 320/256, 740/256, 256/256), "RGGB"))
-plt.imsave("./Scaled_img.png", save_img)
-print("image saved")
-
+plt.imsave("./scaled_img.png", scaled_img)
 ################################################################
 # patch = np.array([[1,2,3,4],[5,6,7,8], [9,10,11,12], [13,14,15,16]])
 # print(patch, patch.shape)
