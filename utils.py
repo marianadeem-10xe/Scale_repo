@@ -276,9 +276,45 @@ def stride_convolve2d(matrix, kernel):
     return correlate2d(matrix, kernel, mode="valid")[::kernel.shape[0], ::kernel.shape[1]]
 
 #############################################################################
-
+# The structure and working of the following three classes is exactlly the same
 class OUT_1080x1920:
+  """
+    The hardware friendly approach can only be used for specific input and output sizes.
+    This class checks if the given output size can be achieved by this approach and 
+    creates a list with corresponding constants used to execute this scaling approach 
+    comprising of the following three steps:
     
+    1. Downscale with int factor 
+    2. Crop  
+    3. Scale with non-integer-factor 
+
+    Class Attributes:
+    ----------------
+    VALID_SIZES [list]: A nested list with two sublists enlisting valid heights(index 0) and 
+    widths(index 1) respectively. 
+
+    SCALE_INFO [dict]: Reference dictionary containing constants used to scale the input to 
+    each of the valid output sizes using the above steps. This dictionary is structured
+    in correspondence to VALID_SIZES i.e. each key is a nested list similar to VALID_SIZES and 
+    index 0 in each of the sublists (for height and width) are the constants which are to be 
+    used for scaling the input to the size at index 0 in VALID_SIZES.
+    
+    The elements in each list correspond to the following constants:
+    
+    1. Scale factor [int]: (default 1) scale factor for downscaling.   
+    2. Crop value [int] : (defaut 0) number of rows or columns to be croped.
+    3. Non-int scale factor [tuple with 2 enteries]: (default None) a rational scale factor 
+       of form n/d where n is the first entry (index 0) and d is the second entry(index 1)
+       of this tuple.   
+    
+    Instance Attributes:
+    -------------------  
+    SCALE_list:  a nested list with two sublists containing constants used in order to
+    scale height (index 0) and width (index 1) to the given NEW_SIZE using the three 
+    steps above.
+    
+    """  
+  
     def __init__(self, new_size):
         self.new_size = new_size
         self.valid_sizes = [[720,480,360], [1280,640]]
